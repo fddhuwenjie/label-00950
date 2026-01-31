@@ -1,0 +1,102 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 14px;
+  color: #333;
+  background-color: #f0f2f5;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+// Element Plus 覆盖样式
+.el-card {
+  border-radius: 8px;
+  
+  .el-card__header {
+    font-weight: 600;
+    color: #333;
+  }
+}
+
+.el-button {
+  border-radius: 6px;
+}
+
+.el-input, .el-select {
+  .el-input__wrapper {
+    border-radius: 6px;
+  }
+}
+
+// 紧凑日期选择器
+.compact-date-picker.el-date-editor {
+  width: 200px !important;
+  
+  .el-range__icon {
+    display: none;
+  }
+  
+  .el-range-input {
+    font-size: 12px;
+    width: 70px;
+  }
+  
+  .el-range-separator {
+    flex: none;
+    padding: 0 2px;
+    font-size: 12px;
+  }
+}
+
+.el-table {
+  border-radius: 8px;
+  
+  th.el-table__cell {
+    background-color: #fafafa;
+  }
+}
+
+.el-pagination {
+  .el-pager li {
+    border-radius: 4px;
+  }
+}
+
+// 通用动画
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+// 滚动条样式
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+  
+  &:hover {
+    background: #a1a1a1;
+  }
+}

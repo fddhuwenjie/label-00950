@@ -1,0 +1,87 @@
+services:
+  # MySQL 数据库
+  mysql:
+    image: mysql:8.0
+    platform: linux/amd64
+    container_name: ecommerce-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_123
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress_password_123
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - ecommerce-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # WordPress 后端
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ecommerce-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_NAME: wordpress
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress_password_123
+      WP_HOME: http://localhost:9080
+      WP_SITEURL: http://localhost:9080
+      WP_ADMIN_USER: admin
+      WP_ADMIN_PASSWORD: admin123
+      WP_ADMIN_EMAIL: admin@example.com
+      WP_DEBUG: 'false'
+    volumes:
+      - wordpress_data:/var/www/html
+      - ./backend/plugins:/var/www/html/wp-content/plugins/custom
+      - ./backend/api:/var/www/html/api
+    ports:
+      - "9080:80"
+    networks:
+      - ecommerce-network
+
+  # 管理后台前端
+  frontend-admin:
+    build:
+      context: ./frontend-admin
+      dockerfile: Dockerfile
+    container_name: ecommerce-frontend-admin
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "9081:80"
+    networks:
+      - ecommerce-network
+
+  # 用户端前端
+  frontend-user:
+    build:
+      context: ./frontend-user
+      dockerfile: Dockerfile
+    container_name: ecommerce-frontend-user
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "9082:80"
+    networks:
+      - ecommerce-network
+
+networks:
+  ecommerce-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  wordpress_data:
