@@ -474,4 +474,53 @@ const handleLogin = async () => {
     font-size: 13px;
   }
 }
+
+// 移动端适配
+@media (max-width: 480px) {
+  .auth-page {
+    padding: 20px 16px;
+    align-items: flex-start;
+    padding-top: 60px;
+  }
+  
+  .auth-card {
+    padding: 32px 24px;
+    border-radius: 20px;
+  }
+  
+  .card-header {
+    margin-bottom: 32px;
+    
+    h1 {
+      font-size: 24px;
+    }
+    
+    p {
+      font-size: 14px;
+    }
+  }
+  
+  .auth-form .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .input-wrapper input {
+    padding: 14px 44px;
+    font-size: 14px;
+  }
+  
+  .submit-btn {
+    padding: 16px;
+    font-size: 15px;
+  }
+  
+  .test-account {
+    padding: 14px;
+    
+    code {
+      font-size: 12px;
+      padding: 3px 8px;
+    }
+  }
+}
 </style>

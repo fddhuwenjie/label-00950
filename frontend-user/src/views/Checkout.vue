@@ -576,7 +576,7 @@ const placeOrder = async () => {
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .checkout-content {
     flex-direction: column;
   }
@@ -584,13 +584,74 @@ const placeOrder = async () => {
   .order-summary {
     width: 100%;
   }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 20px 16px;
+  }
+  
+  .page-title {
+    font-size: 22px;
+    margin-bottom: 20px;
+  }
+  
+  .checkout-form,
+  .order-summary {
+    padding: 20px;
+  }
+  
+  .form-section {
+    padding: 20px;
+    margin-bottom: 16px;
+    
+    h3 {
+      font-size: 16px;
+    }
+  }
   
   .form-grid {
     grid-template-columns: 1fr;
   }
   
+  .shipping-options {
+    flex-direction: column;
+  }
+  
+  .shipping-option {
+    padding: 14px;
+    
+    .option-content .option-name {
+      font-size: 14px;
+    }
+  }
+  
   .payment-options {
     flex-direction: column;
+  }
+  
+  .payment-option {
+    padding: 14px;
+  }
+  
+  .order-summary h2 {
+    font-size: 16px;
+  }
+  
+  .order-item {
+    img {
+      width: 50px;
+      height: 50px;
+    }
+    
+    .item-info .item-name {
+      font-size: 13px;
+    }
+  }
+  
+  .place-order-btn {
+    padding: 14px;
+    font-size: 15px;
   }
 }
 </style>

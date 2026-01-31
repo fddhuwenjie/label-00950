@@ -952,11 +952,27 @@ const confirmPay = () => {
 }
 
 @media (max-width: 768px) {
+  .container {
+    padding: 20px 16px;
+  }
+  
+  .page-header {
+    margin-bottom: 20px;
+    
+    h1 {
+      font-size: 22px;
+    }
+  }
+  
   .orders-tabs {
     flex-wrap: wrap;
+    gap: 8px;
+    padding: 16px;
     
     button {
       flex: 0 0 calc(50% - 4px);
+      padding: 10px 12px;
+      font-size: 13px;
     }
   }
   
@@ -964,20 +980,85 @@ const confirmPay = () => {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
+    padding: 16px;
+    
+    .order-info {
+      flex-direction: column;
+      gap: 4px;
+      
+      .order-number {
+        font-size: 13px;
+      }
+      
+      .order-date {
+        font-size: 12px;
+      }
+    }
+  }
+  
+  .order-items {
+    padding: 16px;
+  }
+  
+  .order-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    
+    .item-image {
+      width: 70px;
+      height: 70px;
+    }
+    
+    .item-info {
+      width: 100%;
+    }
+    
+    .item-total {
+      align-self: flex-end;
+    }
   }
   
   .order-footer {
     flex-direction: column;
     align-items: flex-start;
     gap: 16px;
+    padding: 16px;
+    
+    .order-total .total-price {
+      font-size: 20px;
+    }
     
     .order-actions {
       width: 100%;
       
       button {
         flex: 1;
+        padding: 10px 16px;
+        font-size: 13px;
       }
     }
+  }
+  
+  .modal-overlay {
+    padding: 16px;
+  }
+  
+  .modal-content {
+    border-radius: 20px;
+    max-height: 85vh;
+  }
+  
+  .modal-header {
+    padding: 20px;
+    
+    h3 {
+      font-size: 18px;
+    }
+  }
+  
+  .modal-body {
+    padding: 20px;
   }
   
   .detail-grid {
@@ -986,6 +1067,58 @@ const confirmPay = () => {
   
   .detail-item.full {
     grid-column: span 1;
+  }
+  
+  .item-row {
+    padding: 12px;
+    
+    img {
+      width: 50px;
+      height: 50px;
+    }
+    
+    .item-detail .name {
+      font-size: 13px;
+    }
+  }
+  
+  .empty-orders {
+    padding: 60px 20px;
+    
+    h2 {
+      font-size: 20px;
+    }
+    
+    .shop-btn {
+      padding: 14px 32px;
+      font-size: 15px;
+    }
+  }
+  
+  .pay-amount .pay-price {
+    font-size: 28px;
+  }
+  
+  .pay-method {
+    padding: 14px 16px;
+    
+    .method-icon {
+      width: 44px;
+      height: 44px;
+      
+      .icon-text {
+        font-size: 18px;
+      }
+    }
+    
+    .method-name {
+      font-size: 15px;
+    }
+  }
+  
+  .pay-submit-btn {
+    padding: 16px;
+    font-size: 15px;
   }
 }
 </style>

@@ -213,14 +213,82 @@ const siteSettings = reactive(getGeneralSettings())
 }
 
 @media (max-width: 768px) {
+  .footer {
+    padding: 40px 0 20px;
+    margin-top: 40px;
+  }
+  
+  .container {
+    padding: 0 16px;
+  }
+  
   .footer-content {
     grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  
+  .footer-section {
+    h3 {
+      font-size: 14px;
+      margin-bottom: 14px;
+    }
+    
+    p {
+      font-size: 13px;
+    }
+    
+    ul li {
+      margin-bottom: 10px;
+      
+      a {
+        font-size: 13px;
+      }
+    }
+    
+    .contact-info li {
+      font-size: 13px;
+    }
+  }
+  
+  .social-links {
+    gap: 8px;
+  }
+  
+  .social-link {
+    width: 36px;
+    height: 36px;
   }
   
   .footer-bottom {
     flex-direction: column;
     gap: 15px;
     text-align: center;
+    
+    p {
+      font-size: 12px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    text-align: center;
+  }
+  
+  .footer-section {
+    &:first-child {
+      order: 4;
+    }
+  }
+  
+  .social-links {
+    justify-content: center;
+  }
+  
+  .contact-info li {
+    justify-content: center;
   }
 }
 </style>
