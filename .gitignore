@@ -52,6 +52,11 @@ lerna-debug.log*
 */.env
 */.env.local
 */.env.*.local
+!.env.example
+
+# 安全日志
+backend/logs/
+backend/api/logs/
 
 # 缓存目录
 .cache/

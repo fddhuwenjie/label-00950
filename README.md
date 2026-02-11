@@ -16,6 +16,10 @@
 git clone <repository-url>
 cd 950
 
+# 复制环境变量配置文件并修改
+cp .env.example .env
+# 编辑 .env 文件，设置安全的密码和密钥
+
 # 构建并启动所有服务
 docker-compose up --build -d
 
@@ -25,6 +29,15 @@ docker-compose ps
 # 查看日志
 docker-compose logs -f
 ```
+
+### 安全配置
+
+⚠️ 生产环境部署前，请务必：
+
+1. 复制 `.env.example` 为 `.env` 并修改所有默认密码
+2. 生成新的 WordPress 安全密钥（访问 https://api.wordpress.org/secret-key/1.1/salt/）
+3. 设置强密码（至少12位，包含大小写字母、数字和特殊字符）
+4. 限制 CORS 允许的域名（修改 `backend/api/products.php` 中的 `$allowedOrigins`）
 
 ### 停止项目
 
@@ -170,6 +183,15 @@ docker-compose down -v
 - 🌍 国际物流计算
 - 📋 关税计算
 - 🔒 CORS 跨域支持
+
+### 安全特性
+
+- 🛡️ CSRF 保护
+- 🔐 XSS 防护（输入清理和输出转义）
+- ⏱️ 速率限制
+- 📝 安全事件日志
+- 🔑 环境变量管理敏感信息
+- 🔒 安全响应头（CSP、X-Frame-Options 等）
 
 ## API 接口
 
