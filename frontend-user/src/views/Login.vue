@@ -103,11 +103,6 @@
         <div class="card-footer">
           <p>还没有账户？ <router-link to="/register">立即注册</router-link></p>
         </div>
-        
-        <div class="test-account">
-          <span class="test-badge">测试账号</span>
-          <code>admin</code> / <code>admin123</code>
-        </div>
       </div>
     </div>
   </div>
@@ -444,37 +439,6 @@ const handleLogin = async () => {
   }
 }
 
-.test-account {
-  margin-top: 24px;
-  padding: 16px;
-  background: rgba(99, 102, 241, 0.1);
-  border: 1px solid rgba(99, 102, 241, 0.2);
-  border-radius: 12px;
-  text-align: center;
-  
-  .test-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    background: rgba(99, 102, 241, 0.3);
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 700;
-    color: #818cf8;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 10px;
-  }
-  
-  code {
-    padding: 4px 10px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 6px;
-    color: #c4b5fd;
-    font-family: 'SF Mono', Monaco, monospace;
-    font-size: 13px;
-  }
-}
-
 // 移动端适配
 @media (max-width: 480px) {
   .auth-page {
@@ -512,15 +476,6 @@ const handleLogin = async () => {
   .submit-btn {
     padding: 16px;
     font-size: 15px;
-  }
-  
-  .test-account {
-    padding: 14px;
-    
-    code {
-      font-size: 12px;
-      padding: 3px 8px;
-    }
   }
 }
 </style>

@@ -15,11 +15,12 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 安装 WP-CLI (使用多个备用源，失败则跳过)
+# 安装 WP-CLI (确保安装成功，否则构建失败)
 RUN curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
     || curl -fsSL -o /usr/local/bin/wp https://github.com/wp-cli/wp-cli/releases/download/v2.9.0/wp-cli-2.9.0.phar \
-    || echo "WP-CLI installation skipped" ; \
-    [ -f /usr/local/bin/wp ] && chmod +x /usr/local/bin/wp || true
+    || (echo "WP-CLI installation failed" && exit 1) ; \
+    chmod +x /usr/local/bin/wp && \
+    wp --info --allow-root || (echo "WP-CLI verification failed" && exit 1)
 
 # 复制自定义配置
 COPY wp-config-docker.php /usr/src/wordpress/wp-config-docker.php

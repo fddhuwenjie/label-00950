@@ -1,6 +1,9 @@
 <?php
 /**
  * 货币转换类
+ * 
+ * 注意：本类为简化实现，使用静态汇率数据用于演示。
+ * 生产环境应对接实时汇率 API（如 Open Exchange Rates、Fixer.io 等）。
  */
 
 if (!defined('ABSPATH')) {

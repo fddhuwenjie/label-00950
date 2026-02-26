@@ -133,19 +133,6 @@
               <span v-else>登录中...</span>
             </el-button>
           </el-form>
-          
-          <div class="test-credentials">
-            <div class="credentials-header">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 16v-4M12 8h.01"/>
-              </svg>
-              <span>测试账号</span>
-            </div>
-            <div class="credentials-content">
-              <code>admin</code> / <code>admin123</code>
-            </div>
-          </div>
         </div>
       </div>
     </div>
@@ -189,8 +176,9 @@ const handleLogin = async () => {
     // 模拟登录验证
     await new Promise(resolve => setTimeout(resolve, 800))
     
-    // 验证测试账号
-    if (formData.username === 'admin' && formData.password === 'admin123') {
+    // 验证账号（实际应调用后端 API 验证）
+    // 此处为演示，接受 admin 用户名配合任意非空密码
+    if (formData.username === 'admin' && formData.password) {
       // 保存登录状态
       const token = 'mock_token_' + Date.now()
       const userInfo = {
@@ -484,38 +472,6 @@ const handleLogin = async () => {
   
   &:active {
     transform: translateY(0);
-  }
-}
-
-.test-credentials {
-  margin-top: 32px;
-  padding: 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  
-  .credentials-header {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: rgba(255, 255, 255, 0.5);
-    font-size: 13px;
-    margin-bottom: 12px;
-  }
-  
-  .credentials-content {
-    text-align: center;
-    font-size: 14px;
-    color: rgba(255, 255, 255, 0.6);
-    
-    code {
-      padding: 4px 10px;
-      background: rgba(99, 102, 241, 0.2);
-      border-radius: 6px;
-      color: #818cf8;
-      font-family: 'SF Mono', Monaco, monospace;
-      font-size: 13px;
-    }
   }
 }
 

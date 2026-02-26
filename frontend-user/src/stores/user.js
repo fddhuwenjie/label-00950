@@ -6,13 +6,13 @@ const registeredUsers = ref(
   JSON.parse(localStorage.getItem('registeredUsers') || '[]')
 )
 
-// 初始化默认测试账号
+// 初始化默认管理员账号（密码应通过环境变量配置）
 if (!registeredUsers.value.find(u => u.username === 'admin')) {
   registeredUsers.value.push({
     id: 1,
     username: 'admin',
     email: 'admin@example.com',
-    password: 'admin123',
+    password: 'admin_change_me', // 与 docker-compose 默认值一致
     name: 'Admin'
   })
   localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers.value))

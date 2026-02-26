@@ -14,7 +14,7 @@
 ```bash
 # 克隆项目
 git clone <repository-url>
-cd 950
+cd <project-directory>
 
 # 复制环境变量配置文件并修改
 cp .env.example .env
@@ -66,15 +66,15 @@ docker-compose down -v
 
 ## 测试账号
 
-### 管理后台 / WordPress 后台
+首次启动时，系统会根据环境变量创建管理员账号。默认配置如下（可通过 `.env` 文件修改）：
 
-| 用户名 | 密码 |
+| 配置项 | 默认值 |
 |--------|------|
-| admin | admin123 |
+| 用户名 | admin |
+| 密码 | admin_change_me |
+| 邮箱 | admin@example.com |
 
-### 用户端商城
-
-可使用上述管理员账号登录，或在用户端注册新账号。
+⚠️ 生产环境部署前请务必修改默认密码。
 
 ## 题目内容
 基于 wordprdess 框架做一个跨境电商商城 包含前端商城和后台管理系统
@@ -86,7 +86,7 @@ docker-compose down -v
 2. ✅ 每个子项目包含 Dockerfile，支持 ARM 和 X86 架构
 3. ✅ 根目录包含 docker-compose.yml、.gitignore、README.md
 4. ✅ 支持 `docker-compose up --build -d` 运行
-5. ✅ 前端端口映射：8081（管理后台）、8082（用户端）
+5. ✅ 前端端口映射：9081（管理后台）、9082（用户端）
 6. ✅ .gitignore 包含所有子项目需要忽略的文件
 7. ✅ README.md 包含 How to Run、Services、测试账号、题目内容
 
@@ -195,25 +195,43 @@ docker-compose down -v
 
 ## API 接口
 
-### 商品接口
+本项目提供两套 API 接口：
+
+### 1. 简化 PHP API（前端默认使用）
+
+前端应用默认对接 `/api` 路径下的简化 PHP API，适用于快速开发和演示：
+
+- `GET /api/products.php` - 获取商品列表
+- `GET /api/products.php/{id}` - 获取商品详情
+- `POST /api/products.php` - 添加商品
+- `PUT /api/products.php/{id}` - 更新商品
+- `DELETE /api/products.php/{id}` - 删除商品
+
+### 2. WordPress REST API（完整功能）
+
+基于 WordPress/WooCommerce 的完整 REST API，适用于生产环境：
+
+#### 商品接口
 
 - `GET /wp-json/cbc/v1/products` - 获取商品列表
 - `GET /wp-json/cbc/v1/products/{id}` - 获取商品详情
 - `GET /wp-json/cbc/v1/categories` - 获取分类列表
 
-### 订单接口
+#### 订单接口
 
 - `GET /wp-json/cbc/v1/orders` - 获取订单列表
 - `POST /wp-json/cbc/v1/orders` - 创建订单
 
-### 工具接口
+#### 工具接口（简化实现）
 
-- `GET /wp-json/cbc/v1/currency/convert` - 货币转换
-- `POST /wp-json/cbc/v1/shipping/calculate` - 运费计算
+- `GET /wp-json/cbc/v1/currency/convert` - 货币转换（示例汇率数据）
+- `POST /wp-json/cbc/v1/shipping/calculate` - 运费计算（示例计算逻辑）
 
-### 认证接口
+#### 认证接口
 
 - `POST /wp-json/jwt-auth/v1/token` - 用户登录获取 Token
+
+> 注：货币转换、运费计算、关税计算等跨境功能目前为简化实现，使用示例数据。生产环境应对接实时汇率 API（如 Open Exchange Rates）和物流服务商 API。
 
 ## 开发说明
 

@@ -85,10 +85,24 @@ class Cross_Border_Commerce {
         add_filter('rest_pre_serve_request', function($value) {
             $origin = get_http_origin();
             
-            header('Access-Control-Allow-Origin: *');
+            // 允许的来源列表（生产环境应配置具体域名）
+            $allowed_origins = array(
+                'http://localhost:9081',
+                'http://localhost:9082',
+                'http://localhost:5173',
+                'http://localhost:5174',
+            );
+            
+            if (in_array($origin, $allowed_origins)) {
+                header('Access-Control-Allow-Origin: ' . $origin);
+                header('Access-Control-Allow-Credentials: true');
+            } else {
+                // 开发环境：允许所有来源但不允许凭证
+                header('Access-Control-Allow-Origin: *');
+            }
+            
             header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-            header('Access-Control-Allow-Credentials: true');
-            header('Access-Control-Allow-Headers: Authorization, Content-Type, X-Requested-With');
+            header('Access-Control-Allow-Headers: Authorization, Content-Type, X-Requested-With, X-CSRF-Token');
             
             return $value;
         });
@@ -363,7 +377,7 @@ class Cross_Border_Commerce {
         $to = $request->get_param('to') ?: 'CNY';
         $amount = floatval($request->get_param('amount') ?: 1);
         
-        // 简单的汇率转换（实际项目中应使用实时汇率 API）
+        // 示例汇率数据（简化实现，生产环境应对接实时汇率 API 如 Open Exchange Rates）
         $rates = array(
             'USD' => 1,
             'CNY' => 7.2,
@@ -393,7 +407,7 @@ class Cross_Border_Commerce {
         $country = $params['country'] ?? 'CN';
         $weight = floatval($params['weight'] ?? 1);
         
-        // 简单的运费计算（实际项目中应对接物流 API）
+        // 示例运费计算（简化实现，生产环境应对接物流服务商 API）
         $base_rates = array(
             'CN' => 0,
             'US' => 15,

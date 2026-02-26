@@ -9,17 +9,23 @@ done
 
 echo "数据库已就绪！"
 
+# 检查 WP-CLI 是否可用
+if ! command -v wp &> /dev/null; then
+    echo "错误: WP-CLI 未安装，无法继续初始化"
+    exit 1
+fi
+
 # 检查 WordPress 是否已安装
 if ! wp core is-installed --allow-root 2>/dev/null; then
     echo "正在安装 WordPress..."
     
-    # 安装 WordPress
+    # 安装 WordPress（使用环境变量，无默认回退值确保配置一致性）
     wp core install \
-        --url="${WP_HOME:-http://localhost:8080}" \
+        --url="${WP_HOME}" \
         --title="跨境电商商城" \
-        --admin_user="${WP_ADMIN_USER:-admin}" \
-        --admin_password="${WP_ADMIN_PASSWORD:-admin123}" \
-        --admin_email="${WP_ADMIN_EMAIL:-admin@example.com}" \
+        --admin_user="${WP_ADMIN_USER}" \
+        --admin_password="${WP_ADMIN_PASSWORD}" \
+        --admin_email="${WP_ADMIN_EMAIL}" \
         --skip-email \
         --allow-root
 
