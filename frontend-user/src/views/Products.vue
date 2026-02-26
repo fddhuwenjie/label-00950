@@ -68,6 +68,13 @@
               共 <strong>{{ filteredProducts.length }}</strong> 件商品
             </span>
             <div class="toolbar-right">
+              <button v-if="searchKeyword" class="clear-search-toolbar" @click="clearSearch">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="18" y1="6" x2="6" y2="18"/>
+                  <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+                清除搜索
+              </button>
               <div class="sort-select">
                 <select v-model="sortBy">
                   <option value="default">默认排序</option>
@@ -448,6 +455,32 @@ const clearSearch = () => {
       color: #1a1a1a;
       font-weight: 700;
     }
+  }
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clear-search-toolbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
   }
 }
 
