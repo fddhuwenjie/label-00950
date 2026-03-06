@@ -418,7 +418,7 @@ const saveProduct = async () => {
     // 确保 image 字段是第一张图
     const formData = {
       ...productForm.value,
-      image: productForm.value.images[0] || productForm.value.image || 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=200&h=200&fit=crop'
+      image: productForm.value.images[0] || productForm.value.image || '/images/products/default-product.jpg'
     }
     
     if (editingProduct.value) {

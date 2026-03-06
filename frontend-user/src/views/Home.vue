@@ -260,10 +260,10 @@ onMounted(async () => {
 // 分类信息
 const categories = computed(() => {
   const catImages = {
-    'electronics': 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=400&h=300&fit=crop',
-    'fashion': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=300&fit=crop',
-    'beauty': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=300&fit=crop',
-    'home': 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
+    'electronics': '/images/products/category-electronics.jpg',
+    'fashion': '/images/products/category-fashion.jpg',
+    'beauty': '/images/products/category-beauty.jpg',
+    'home': '/images/products/category-home.jpg',
   }
   
   if (apiCategories.value.length > 0) {
