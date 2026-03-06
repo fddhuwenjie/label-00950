@@ -153,6 +153,69 @@
       </div>
     </div>
   </div>
+  
+  <!-- 支付弹窗 -->
+  <div v-if="showPayModal" class="modal-overlay" @click="closePayModal">
+    <div class="modal-content pay-modal" @click.stop>
+      <div class="modal-header">
+        <h3>确认支付</h3>
+        <button class="close-btn" @click="closePayModal">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      
+      <div class="modal-body">
+        <div class="pay-amount">
+          <span class="pay-label">支付金额</span>
+          <span class="pay-price">${{ pendingOrder ? pendingOrder.total.toFixed(2) : '0.00' }}</span>
+        </div>
+        
+        <div class="pay-methods">
+          <label class="pay-method" :class="{ active: payMethod === 'alipay' }">
+            <input type="radio" v-model="payMethod" value="alipay" />
+            <span class="method-icon alipay">
+              <span class="icon-text">支</span>
+            </span>
+            <div class="method-info">
+              <span class="method-name">支付宝</span>
+              <span class="method-desc">Alipay</span>
+            </div>
+          </label>
+          <label class="pay-method" :class="{ active: payMethod === 'wechat' }">
+            <input type="radio" v-model="payMethod" value="wechat" />
+            <span class="method-icon wechat">
+              <span class="icon-text">微</span>
+            </span>
+            <div class="method-info">
+              <span class="method-name">微信支付</span>
+              <span class="method-desc">WeChat Pay</span>
+            </div>
+          </label>
+          <label class="pay-method" :class="{ active: payMethod === 'paypal' }">
+            <input type="radio" v-model="payMethod" value="paypal" />
+            <span class="method-icon paypal">
+              <span class="icon-text">P</span>
+            </span>
+            <div class="method-info">
+              <span class="method-name">PayPal</span>
+              <span class="method-desc">International</span>
+            </div>
+          </label>
+        </div>
+        
+        <button class="pay-submit-btn" @click="confirmPay" :disabled="paying">
+          {{ paying ? '支付中...' : '确认支付' }}
+        </button>
+        
+        <button class="pay-later-btn" @click="payLater">
+          稍后支付
+        </button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -165,6 +228,10 @@ import { settingsApi, orderApi, crossBorderApi } from '@/utils/api'
 const router = useRouter()
 const cartStore = useCartStore()
 const submitting = ref(false)
+const showPayModal = ref(false)
+const pendingOrder = ref(null)
+const payMethod = ref('alipay')
+const paying = ref(false)
 const shippingSettings = reactive({
   defaultShippingFee: 15,
   estimatedDelivery: '7-15个工作日',
@@ -291,18 +358,59 @@ const placeOrder = async () => {
   submitting.value = true
   
   try {
-    // 模拟订单提交
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    const orderData = {
+      items: cartStore.items.map(item => ({
+        id: item.id,
+        quantity: item.quantity,
+      })),
+      billing: {
+        firstName: form.name,
+        lastName: '',
+        email: form.email,
+        phone: form.phone,
+        address: form.address,
+        city: form.city,
+        postcode: form.zipCode,
+        country: form.country,
+      },
+      shipping_fee: shippingFee.value,
+    }
     
-    const orderNo = 'ORD-' + Date.now()
+    const result = await orderApi.create(orderData)
     cartStore.clearCart()
-    toast.success(`订单提交成功！订单号: ${orderNo}`)
-    router.push('/orders')
+    pendingOrder.value = result
+    showPayModal.value = true
+    toast.success(`订单创建成功！订单号: ${result.number || result.id}`)
   } catch (error) {
-    toast.error('订单提交失败，请重试')
+    toast.error(error.message || '订单提交失败，请重试')
   } finally {
     submitting.value = false
   }
+}
+
+const closePayModal = () => {
+  showPayModal.value = false
+}
+
+const confirmPay = async () => {
+  if (!pendingOrder.value) return
+  paying.value = true
+  try {
+    await orderApi.updateStatus(pendingOrder.value.id, 'processing')
+    toast.success('支付成功！订单正在处理中')
+    showPayModal.value = false
+    router.push('/orders')
+  } catch (error) {
+    toast.error(error.message || '支付失败，请重试')
+  } finally {
+    paying.value = false
+  }
+}
+
+const payLater = () => {
+  showPayModal.value = false
+  toast.info('订单已创建，您可以稍后在"我的订单"中支付')
+  router.push('/orders')
 }
 </script>
 
@@ -665,6 +773,199 @@ const placeOrder = async () => {
   .place-order-btn {
     padding: 14px;
     font-size: 15px;
+  }
+}
+
+// 支付弹窗样式
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.pay-modal {
+  background: #fff;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 420px;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px;
+  border-bottom: 1px solid #f0f0f0;
+  
+  h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0;
+  }
+  
+  .close-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f5f5f5;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: #eee;
+      color: #1a1a1a;
+    }
+  }
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.pay-amount {
+  text-align: center;
+  padding: 24px;
+  background: #fafafa;
+  border-radius: 16px;
+  margin-bottom: 24px;
+  
+  .pay-label {
+    display: block;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 8px;
+  }
+  
+  .pay-price {
+    font-size: 36px;
+    font-weight: 800;
+    color: #1a1a1a;
+  }
+}
+
+.pay-methods {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.pay-method {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  border: 2px solid #f0f0f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  input { display: none; }
+  
+  &.active {
+    border-color: #6366f1;
+    background: #fafaff;
+  }
+  
+  .method-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    
+    .icon-text {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fff;
+    }
+    
+    &.alipay {
+      background: linear-gradient(135deg, #1677ff 0%, #0052d9 100%);
+    }
+    
+    &.wechat {
+      background: linear-gradient(135deg, #07c160 0%, #06a94d 100%);
+    }
+    
+    &.paypal {
+      background: linear-gradient(135deg, #003087 0%, #009cde 100%);
+    }
+  }
+  
+  .method-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .method-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+  }
+  
+  .method-desc {
+    font-size: 12px;
+    color: #999;
+  }
+}
+
+.pay-submit-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.4);
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.pay-later-btn {
+  width: 100%;
+  padding: 14px;
+  background: none;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: #999;
+    color: #333;
   }
 }
 </style>

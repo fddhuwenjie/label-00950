@@ -18,7 +18,10 @@
         </button>
       </div>
       
-      <div v-if="filteredOrders.length > 0" class="orders-list">
+      <div v-if="loading" class="loading-state">
+        <p>加载中...</p>
+      </div>
+      <div v-else-if="filteredOrders.length > 0" class="orders-list">
         <div v-for="order in filteredOrders" :key="order.id" class="order-card">
           <div class="order-header">
             <div class="order-info">
@@ -206,8 +209,9 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import toast from '@/utils/toast'
+import { orderApi } from '@/utils/api'
 
 const activeTab = ref('all')
 const showDetailModal = ref(false)
@@ -215,84 +219,52 @@ const showPayModal = ref(false)
 const selectedOrder = ref(null)
 const payOrder = ref(null)
 const payMethod = ref('alipay')
+const loading = ref(false)
 
 const tabs = [
   { id: 'all', label: '全部订单' },
   { id: 'pending', label: '待付款' },
   { id: 'processing', label: '处理中' },
-  { id: 'shipping', label: '配送中' },
+  { id: 'on-hold', label: '配送中' },
   { id: 'completed', label: '已完成' },
 ]
 
-const orders = ref([
-  {
-    id: 'ORD-20240115001',
-    status: 'shipping',
-    date: '2024-01-15 14:30',
-    total: 1099,
-    shipping: {
-      name: '张三',
-      phone: '138****8888',
-      address: '北京市朝阳区建国路88号SOHO现代城A座1001室'
-    },
-    items: [
-      { 
-        id: 1, 
-        name: 'iPhone 15 Pro Max 256GB 深空黑', 
-        price: 1099, 
-        quantity: 1, 
-        image: 'https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=200&h=200&fit=crop' 
-      }
-    ]
-  },
-  {
-    id: 'ORD-20240114002',
-    status: 'completed',
-    date: '2024-01-14 10:20',
-    total: 698,
-    shipping: {
-      name: '李四',
-      phone: '139****9999',
-      address: '上海市浦东新区陆家嘴金融贸易区世纪大道100号'
-    },
-    items: [
-      { 
-        id: 2, 
-        name: 'Sony WH-1000XM5 无线降噪耳机', 
-        price: 349, 
-        quantity: 1, 
-        image: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=200&h=200&fit=crop' 
+const orders = ref([])
+
+onMounted(async () => {
+  await fetchOrders()
+})
+
+const fetchOrders = async () => {
+  loading.value = true
+  try {
+    const data = await orderApi.getAll()
+    orders.value = data.map(o => ({
+      id: o.number || o.id,
+      rawId: o.id,
+      status: o.status,
+      date: o.date,
+      total: o.total,
+      shipping: {
+        name: o.billing?.name || '',
+        phone: o.billing?.phone || '',
+        address: o.billing?.address || '',
       },
-      { 
-        id: 3, 
-        name: 'Apple Watch Ultra 2 钛金属', 
-        price: 349, 
-        quantity: 1, 
-        image: 'https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?w=200&h=200&fit=crop' 
-      }
-    ]
-  },
-  {
-    id: 'ORD-20240110003',
-    status: 'pending',
-    date: '2024-01-10 16:45',
-    total: 1999,
-    shipping: {
-      name: '王五',
-      phone: '137****7777',
-      address: '广州市天河区珠江新城华夏路30号'
-    },
-    items: [
-      { 
-        id: 4, 
-        name: 'MacBook Pro 14" M3 Pro 芯片', 
-        price: 1999, 
-        quantity: 1, 
-        image: 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=200&h=200&fit=crop' 
-      }
-    ]
+      items: (o.items || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        image: item.image || '',
+      })),
+    }))
+  } catch (e) {
+    // 未登录或无订单
+    orders.value = []
+  } finally {
+    loading.value = false
   }
-])
+}
 
 const filteredOrders = computed(() => {
   if (activeTab.value === 'all') {
@@ -310,9 +282,11 @@ const getStatusText = (status) => {
   const texts = {
     pending: '待付款',
     processing: '处理中',
-    shipping: '配送中',
+    'on-hold': '配送中',
     completed: '已完成',
-    cancelled: '已取消'
+    cancelled: '已取消',
+    refunded: '已退款',
+    failed: '失败'
   }
   return texts[status] || status
 }
@@ -337,12 +311,16 @@ const closePayModal = () => {
   payOrder.value = null
 }
 
-const confirmPay = () => {
-  // 模拟支付成功
+const confirmPay = async () => {
   if (payOrder.value) {
-    payOrder.value.status = 'processing'
-    toast.success('支付成功！订单正在处理中')
-    closePayModal()
+    try {
+      await orderApi.updateStatus(payOrder.value.rawId, 'processing')
+      payOrder.value.status = 'processing'
+      toast.success('支付成功！订单正在处理中')
+      closePayModal()
+    } catch (e) {
+      toast.error(e.message || '支付失败，请重试')
+    }
   }
 }
 </script>
@@ -473,7 +451,7 @@ const confirmPay = () => {
       color: #1d4ed8;
     }
     
-    &.shipping {
+    &.on-hold {
       background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
       color: #047857;
     }
@@ -617,6 +595,13 @@ const confirmPay = () => {
       }
     }
   }
+}
+
+.loading-state {
+  text-align: center;
+  padding: 60px 0;
+  color: #999;
+  font-size: 16px;
 }
 
 .empty-orders {

@@ -91,6 +91,7 @@ export const categoryApi = {
 export const orderApi = {
   getAll: (params = {}) => api.get('/orders', params),
   create: (data) => api.post('/orders', data),
+  updateStatus: (id, status) => api.put(`/orders/${id}/status`, { status }),
 }
 
 // ===== 跨境电商功能 API =====

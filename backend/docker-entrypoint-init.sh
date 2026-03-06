@@ -10,6 +10,9 @@ until mysql -h"$WORDPRESS_DB_HOST" -u"$WORDPRESS_DB_USER" -p"$WORDPRESS_DB_PASSW
 done
 echo "数据库已就绪！"
 
+# 标记文件，用于判断初始化是否完成
+INIT_DONE_FLAG="/var/www/html/.init_done"
+
 # 检查 WordPress 是否已安装
 if ! wp core is-installed --allow-root 2>/dev/null; then
     echo "=== 安装 WordPress ==="
@@ -26,26 +29,34 @@ if ! wp core is-installed --allow-root 2>/dev/null; then
     wp language core install zh_CN --allow-root 2>/dev/null || true
     wp site switch-language zh_CN --allow-root 2>/dev/null || true
 
-    # 设置永久链接（REST API 需要）
+    # 设置永久链接
     wp rewrite structure '/%postname%/' --allow-root
     wp rewrite flush --allow-root
+fi
 
+# 检查 WooCommerce 是否已安装并激活
+if ! wp plugin is-active woocommerce --allow-root 2>/dev/null; then
     echo "=== 安装 WooCommerce ==="
-    wp plugin install woocommerce --activate --allow-root
+    wp plugin install woocommerce --activate --allow-root 2>/dev/null || \
+    wp plugin activate woocommerce --allow-root 2>/dev/null || true
+fi
 
-    # 激活自定义跨境电商插件
-    wp plugin activate cross-border-commerce --allow-root 2>/dev/null || true
+# 激活自定义插件
+wp plugin activate cross-border-commerce --allow-root 2>/dev/null || true
 
+# 检查是否已完成完整初始化（商品导入等）
+if [ ! -f "$INIT_DONE_FLAG" ]; then
+    echo "=== 配置 WooCommerce ==="
     # 创建 WooCommerce 页面
     wp wc --user="${WP_ADMIN_USER}" tool run install_pages --allow-root 2>/dev/null || true
 
-    # 配置 WooCommerce 基本设置
-    wp option update woocommerce_currency 'USD' --allow-root
-    wp option update woocommerce_currency_pos 'left' --allow-root
-    wp option update woocommerce_default_country 'US' --allow-root
-    wp option update woocommerce_calc_taxes 'yes' --allow-root
-    wp option update woocommerce_enable_signup_and_login_from_checkout 'yes' --allow-root
-    wp option update woocommerce_enable_myaccount_registration 'yes' --allow-root
+    # 配置基本设置
+    wp option update woocommerce_currency 'USD' --allow-root 2>/dev/null || true
+    wp option update woocommerce_currency_pos 'left' --allow-root 2>/dev/null || true
+    wp option update woocommerce_default_country 'US' --allow-root 2>/dev/null || true
+    wp option update woocommerce_calc_taxes 'yes' --allow-root 2>/dev/null || true
+    wp option update woocommerce_enable_signup_and_login_from_checkout 'yes' --allow-root 2>/dev/null || true
+    wp option update woocommerce_enable_myaccount_registration 'yes' --allow-root 2>/dev/null || true
 
     echo "=== 创建商品分类 ==="
     wp wc --user="${WP_ADMIN_USER}" product_cat create --name="数码电子" --slug="electronics" --allow-root 2>/dev/null || true
@@ -54,7 +65,6 @@ if ! wp core is-installed --allow-root 2>/dev/null; then
     wp wc --user="${WP_ADMIN_USER}" product_cat create --name="家居生活" --slug="home" --allow-root 2>/dev/null || true
 
     echo "=== 导入商品数据 ==="
-    # 使用 wp eval 通过 WooCommerce PHP API 创建商品
     wp eval '
     $categories = array(
         "数码电子" => get_term_by("slug", "electronics", "product_cat"),
@@ -78,32 +88,39 @@ if ! wp core is-installed --allow-root 2>/dev/null; then
         array("Coach Tabby 手提单肩包", "COACH-TABBY", 395, null, 20, "时尚服饰", "Coach Tabby 手提包", "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400&h=400&fit=crop"),
     );
 
-    foreach ($products as $p) {
-        $product = new WC_Product_Simple();
-        $product->set_name($p[0]);
-        $product->set_sku($p[1]);
-        $product->set_regular_price($p[2]);
-        if ($p[3]) $product->set_sale_price($p[3]);
-        $product->set_stock_quantity($p[4]);
-        $product->set_manage_stock(true);
-        $product->set_description($p[6]);
-        $product->set_short_description($p[6]);
-        $product->set_status("publish");
-        $cat = $categories[$p[5]] ?? null;
-        if ($cat) $product->set_category_ids(array($cat->term_id));
-        $product->update_meta_data("_external_image", $p[7]);
-        $product->save();
-        echo "Created: " . $p[0] . "\n";
+    // 检查是否已有商品
+    $existing = wc_get_products(array("limit" => 1));
+    if (count($existing) > 0) {
+        echo "商品已存在，跳过导入\n";
+    } else {
+        foreach ($products as $p) {
+            $product = new WC_Product_Simple();
+            $product->set_name($p[0]);
+            $product->set_sku($p[1]);
+            $product->set_regular_price($p[2]);
+            if ($p[3]) $product->set_sale_price($p[3]);
+            $product->set_stock_quantity($p[4]);
+            $product->set_manage_stock(true);
+            $product->set_description($p[6]);
+            $product->set_short_description($p[6]);
+            $product->set_status("publish");
+            $cat = $categories[$p[5]] ?? null;
+            if ($cat) $product->set_category_ids(array($cat->term_id));
+            $product->update_meta_data("_external_image", $p[7]);
+            $product->save();
+            echo "Created: " . $p[0] . "\n";
+        }
     }
     ' --allow-root 2>&1 || echo "商品导入出错"
 
     echo "=== 创建测试用户 ==="
     wp user create testuser test@example.com --role=customer --user_pass=test123 --display_name="测试用户" --allow-root 2>/dev/null || true
 
+    # 标记初始化完成
+    touch "$INIT_DONE_FLAG"
     echo "=== 初始化完成 ==="
 else
-    echo "WordPress 已安装，跳过初始化。"
-    wp plugin activate cross-border-commerce --allow-root 2>/dev/null || true
+    echo "初始化已完成，跳过。"
 fi
 
 echo "初始化脚本执行完毕"

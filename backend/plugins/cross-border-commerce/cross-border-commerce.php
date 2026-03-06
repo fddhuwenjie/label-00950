@@ -122,6 +122,12 @@ class Cross_Border_Commerce {
             'permission_callback' => array($this, 'check_user_permission'),
         ));
 
+        register_rest_route($namespace, '/orders/(?P<id>\d+)/status', array(
+            'methods' => 'PUT',
+            'callback' => array($this, 'update_order_status'),
+            'permission_callback' => array($this, 'check_admin_permission'),
+        ));
+
         // ===== 跨境电商功能 API =====
         register_rest_route($namespace, '/currency/convert', array(
             'methods' => 'GET',
@@ -579,7 +585,7 @@ class Cross_Border_Commerce {
         }
 
         $order->calculate_totals();
-        $order->set_status('processing');
+        $order->set_status('pending');
         $order->save();
 
         return rest_ensure_response(array(
@@ -587,6 +593,31 @@ class Cross_Border_Commerce {
             'number' => $order->get_order_number(),
             'total' => floatval($order->get_total()),
             'status' => $order->get_status(),
+        ));
+    }
+
+    public function update_order_status($request) {
+        $order_id = intval($request->get_param('id'));
+        $params = $request->get_json_params();
+        $new_status = sanitize_text_field($params['status'] ?? '');
+
+        $valid_statuses = array('pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed');
+        if (!in_array($new_status, $valid_statuses)) {
+            return new WP_Error('invalid_status', '无效的订单状态', array('status' => 400));
+        }
+
+        $order = wc_get_order($order_id);
+        if (!$order) {
+            return new WP_Error('not_found', '订单不存在', array('status' => 404));
+        }
+
+        $order->set_status($new_status);
+        $order->save();
+
+        return rest_ensure_response(array(
+            'id' => $order->get_id(),
+            'status' => $order->get_status(),
+            'message' => '订单状态已更新',
         ));
     }
 

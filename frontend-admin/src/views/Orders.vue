@@ -19,7 +19,7 @@
         <el-select v-model="statusFilter" placeholder="订单状态" clearable style="width: 110px">
           <el-option label="待付款" value="pending" />
           <el-option label="处理中" value="processing" />
-          <el-option label="配送中" value="shipping" />
+          <el-option label="配送中" value="on-hold" />
           <el-option label="已完成" value="completed" />
           <el-option label="已取消" value="cancelled" />
         </el-select>
@@ -80,7 +80,7 @@
                     <el-dropdown-item command="processing">
                       标记处理中
                     </el-dropdown-item>
-                    <el-dropdown-item command="shipping">
+                    <el-dropdown-item command="on-hold">
                       标记已发货
                     </el-dropdown-item>
                     <el-dropdown-item command="completed">
@@ -151,9 +151,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+import { orderApi } from '@/utils/api'
 
 const loading = ref(false)
 const searchQuery = ref('')
@@ -163,65 +164,43 @@ const pageSize = ref(10)
 const detailVisible = ref(false)
 const selectedOrder = ref(null)
 
-const orders = ref([
-  {
-    id: 'ORD-10086',
-    customer: { name: 'John Doe', email: 'john@example.com' },
-    items: [
-      { name: 'iPhone 15 Pro', price: 999, qty: 1 },
-      { name: '保护壳', price: 29.99, qty: 2 }
-    ],
-    total: 1058.98,
-    status: 'processing',
-    date: '2024-01-15 14:30:00',
-    shipping: { address: '123 Main St, New York, NY 10001, USA' }
-  },
-  {
-    id: 'ORD-10085',
-    customer: { name: 'Jane Smith', email: 'jane@example.com' },
-    items: [
-      { name: 'MacBook Air', price: 1299, qty: 1 }
-    ],
-    total: 1299.00,
-    status: 'completed',
-    date: '2024-01-15 13:20:00',
-    shipping: { address: '456 Oak Ave, Los Angeles, CA 90001, USA' }
-  },
-  {
-    id: 'ORD-10084',
-    customer: { name: '王小明', email: 'xiaoming@example.com' },
-    items: [
-      { name: '护肤套装', price: 89, qty: 1 }
-    ],
-    total: 89.00,
-    status: 'pending',
-    date: '2024-01-15 12:15:00',
-    shipping: { address: '北京市朝阳区xxx街道xxx号' }
-  },
-  {
-    id: 'ORD-10083',
-    customer: { name: 'Bob Wilson', email: 'bob@example.com' },
-    items: [
-      { name: 'AirPods Pro', price: 249, qty: 1 },
-      { name: 'Apple Watch', price: 399, qty: 1 }
-    ],
-    total: 648.00,
-    status: 'shipping',
-    date: '2024-01-15 11:00:00',
-    shipping: { address: '789 Pine St, Chicago, IL 60601, USA' }
-  },
-  {
-    id: 'ORD-10082',
-    customer: { name: '李华', email: 'lihua@example.com' },
-    items: [
-      { name: '智能手表', price: 199.99, qty: 1 }
-    ],
-    total: 199.99,
-    status: 'cancelled',
-    date: '2024-01-15 10:30:00',
-    shipping: { address: '上海市浦东新区xxx路xxx号' }
+const orders = ref([])
+
+onMounted(async () => {
+  await fetchOrders()
+})
+
+const fetchOrders = async () => {
+  loading.value = true
+  try {
+    const data = await orderApi.getAll()
+    orders.value = data.map(o => ({
+      id: o.number || o.id,
+      rawId: o.id,
+      customer: {
+        name: o.billing?.name || '未知',
+        email: o.billing?.email || '',
+      },
+      items: (o.items || []).map(item => ({
+        name: item.name,
+        price: item.price,
+        qty: item.quantity,
+        image: item.image || '',
+      })),
+      total: o.total,
+      status: o.status,
+      date: o.date,
+      shipping: {
+        address: o.billing?.address || '',
+      },
+    }))
+  } catch (e) {
+    orders.value = []
+    ElMessage.error('获取订单失败: ' + (e.message || '未知错误'))
+  } finally {
+    loading.value = false
   }
-])
+}
 
 const filteredOrders = computed(() => {
   return orders.value.filter(o => {
@@ -243,9 +222,11 @@ const getStatusType = (status) => {
   const types = {
     pending: 'info',
     processing: 'warning',
-    shipping: '',
+    'on-hold': '',
     completed: 'success',
-    cancelled: 'danger'
+    cancelled: 'danger',
+    refunded: 'danger',
+    failed: 'danger'
   }
   return types[status] || ''
 }
@@ -254,9 +235,11 @@ const getStatusText = (status) => {
   const texts = {
     pending: '待付款',
     processing: '处理中',
-    shipping: '配送中',
+    'on-hold': '配送中',
     completed: '已完成',
-    cancelled: '已取消'
+    cancelled: '已取消',
+    refunded: '已退款',
+    failed: '失败'
   }
   return texts[status] || status
 }
@@ -266,9 +249,14 @@ const viewOrder = (order) => {
   detailVisible.value = true
 }
 
-const handleCommand = (command, order) => {
-  order.status = command
-  ElMessage.success(`订单状态已更新为: ${getStatusText(command)}`)
+const handleCommand = async (command, order) => {
+  try {
+    await orderApi.updateStatus(order.rawId, command)
+    order.status = command
+    ElMessage.success(`订单状态已更新为: ${getStatusText(command)}`)
+  } catch (e) {
+    ElMessage.error('更新失败: ' + (e.message || '未知错误'))
+  }
 }
 
 const exportOrders = () => {

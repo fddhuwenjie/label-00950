@@ -46,6 +46,12 @@ services:
       - "9080:80"
     networks:
       - ecommerce-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/wp-json/cbc/v1/products"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
 
   # 管理后台前端
   frontend-admin:
@@ -55,7 +61,8 @@ services:
     container_name: ecommerce-frontend-admin
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "9081:80"
     networks:
@@ -69,7 +76,8 @@ services:
     container_name: ecommerce-frontend-user
     restart: unless-stopped
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "9082:80"
     networks:

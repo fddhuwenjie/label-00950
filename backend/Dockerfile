@@ -33,20 +33,32 @@ COPY plugins/cross-border-commerce/ /usr/src/wordpress/wp-content/plugins/cross-
 COPY docker-entrypoint-init.sh /usr/local/bin/custom-init.sh
 RUN chmod +x /usr/local/bin/custom-init.sh
 
-# 创建自定义 entrypoint：先执行 WordPress 官方 entrypoint，再运行初始化
+# 创建自定义 entrypoint：先执行 WordPress 官方 entrypoint 复制文件，再运行初始化，最后启动 Apache
 # WordPress entrypoint 需要 $1 = apache2-foreground 才会复制文件
-# 我们的策略：包装 entrypoint，在 WordPress entrypoint 执行后、Apache 启动前运行初始化
+# 策略：用自定义 apache2-foreground 脚本替换，先运行初始化再启动真正的 Apache
 RUN mv /usr/local/bin/docker-entrypoint.sh /usr/local/bin/docker-entrypoint-original.sh
-COPY <<'WRAPPER' /usr/local/bin/docker-entrypoint.sh
+
+# 创建一个假的 apache2-foreground，WordPress entrypoint 会 exec 它
+# 在这个脚本里先运行初始化，再 exec 真正的 apache2-foreground
+COPY <<'WRAPPER' /usr/local/bin/custom-apache2-foreground
 #!/bin/bash
 set -e
-# 执行 WordPress 官方 entrypoint 的文件复制逻辑
-# 但不让它 exec apache，而是先运行我们的初始化
-# 方法：在后台运行初始化脚本，然后启动 Apache
-/usr/local/bin/custom-init.sh &
-exec /usr/local/bin/docker-entrypoint-original.sh "$@"
+echo "=== WordPress 文件复制完成，开始自定义初始化 ==="
+# 运行初始化脚本（同步执行，确保完成后再启动 Apache）
+/usr/local/bin/custom-init.sh || echo "初始化脚本出错，继续启动 Apache"
+echo "=== 启动 Apache ==="
+exec /usr/local/bin/real-apache2-foreground
 WRAPPER
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/custom-apache2-foreground
+
+# 备份真正的 apache2-foreground
+RUN cp /usr/local/bin/apache2-foreground /usr/local/bin/real-apache2-foreground
+
+# 替换 apache2-foreground 为我们的自定义版本
+RUN cp /usr/local/bin/custom-apache2-foreground /usr/local/bin/apache2-foreground
+
+# 恢复原始 entrypoint
+RUN cp /usr/local/bin/docker-entrypoint-original.sh /usr/local/bin/docker-entrypoint.sh
 
 EXPOSE 80
 
