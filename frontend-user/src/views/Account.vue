@@ -108,25 +108,6 @@
               </button>
             </form>
           </section>
-          
-          <!-- 收货地址 -->
-          <section v-show="activeSection === 'address'" class="account-section">
-            <h2>收货地址</h2>
-            <div class="address-list">
-              <div v-for="addr in addresses" :key="addr.id" class="address-card">
-                <div class="address-content">
-                  <p class="address-name">{{ addr.name }} <span>{{ addr.phone }}</span></p>
-                  <p class="address-detail">{{ addr.address }}</p>
-                  <span v-if="addr.isDefault" class="default-badge">默认</span>
-                </div>
-                <div class="address-actions">
-                  <button @click="editAddress(addr)">编辑</button>
-                  <button @click="deleteAddress(addr)">删除</button>
-                </div>
-              </div>
-            </div>
-            <button class="add-address-btn" @click="showAddAddress">+ 添加新地址</button>
-          </section>
         </main>
       </div>
     </div>
@@ -149,7 +130,6 @@ const passwordSaving = ref(false)
 const navItems = [
   { id: 'profile', label: '个人信息' },
   { id: 'password', label: '修改密码' },
-  { id: 'address', label: '收货地址' },
 ]
 
 const profile = reactive({
@@ -163,10 +143,6 @@ const profileErrors = reactive({ username: '', email: '', phone: '' })
 const password = reactive({ current: '', new: '', confirm: '' })
 const passwordErrors = reactive({ current: '', new: '', confirm: '' })
 
-// 地址管理
-const addresses = ref([])
-const ADDR_KEY = 'user_addresses'
-
 onMounted(() => {
   // 从 userStore 加载个人信息
   profile.username = userStore.userInfo.name || ''
@@ -178,9 +154,6 @@ onMounted(() => {
     profile.nickname = data.nickname || ''
     profile.phone = data.phone || ''
   }
-  // 加载地址
-  const addrSaved = localStorage.getItem(ADDR_KEY)
-  if (addrSaved) addresses.value = JSON.parse(addrSaved)
 })
 
 const validateProfileField = (field) => {
@@ -258,21 +231,6 @@ const changePassword = async () => {
   }
 }
 
-// 地址管理 - 跳转到独立地址页面
-const editAddress = (addr) => {
-  router.push('/addresses')
-}
-const deleteAddress = (addr) => {
-  const idx = addresses.value.findIndex(a => a === addr)
-  if (idx >= 0) {
-    addresses.value.splice(idx, 1)
-    localStorage.setItem(ADDR_KEY, JSON.stringify(addresses.value))
-    toast.success('地址已删除')
-  }
-}
-const showAddAddress = () => {
-  router.push('/addresses')
-}
 </script>
 
 <style lang="scss" scoped>
@@ -442,85 +400,6 @@ const showAddAddress = () => {
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-  }
-}
-
-.address-list {
-  margin-bottom: 20px;
-}
-
-.address-card {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 20px;
-  border: 1px solid #eee;
-  border-radius: 8px;
-  margin-bottom: 12px;
-  
-  .address-content {
-    .address-name {
-      font-weight: 500;
-      color: #333;
-      margin-bottom: 8px;
-      
-      span {
-        color: #666;
-        font-weight: normal;
-        margin-left: 12px;
-      }
-    }
-    
-    .address-detail {
-      color: #666;
-      font-size: 14px;
-      margin-bottom: 8px;
-    }
-    
-    .default-badge {
-      display: inline-block;
-      padding: 2px 8px;
-      background: #e6f7ff;
-      color: #1890ff;
-      font-size: 12px;
-      border-radius: 4px;
-    }
-  }
-  
-  .address-actions {
-    button {
-      padding: 6px 12px;
-      background: none;
-      border: 1px solid #e8e8e8;
-      border-radius: 4px;
-      margin-left: 8px;
-      cursor: pointer;
-      font-size: 13px;
-      color: #666;
-      transition: all 0.2s ease;
-      
-      &:hover {
-        border-color: #6366f1;
-        color: #6366f1;
-      }
-    }
-  }
-}
-
-.add-address-btn {
-  width: 100%;
-  padding: 16px;
-  background: none;
-  border: 2px dashed #e8e8e8;
-  border-radius: 8px;
-  color: #999;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    border-color: #6366f1;
-    color: #6366f1;
   }
 }
 
