@@ -208,7 +208,7 @@ const getCategoryCount = (slug) => {
     filtered = filtered.filter(p => p.name.toLowerCase().includes(keyword))
   }
   if (!slug) return filtered.length
-  return filtered.filter(p => p.category === slug).length
+  return filtered.filter(p => p.categorySlug === slug).length
 }
 
 const categories = computed(() => [
@@ -238,7 +238,7 @@ const filteredProducts = computed(() => {
   
   // 分类筛选
   if (selectedCategory.value) {
-    result = result.filter(p => p.category === selectedCategory.value)
+    result = result.filter(p => p.categorySlug === selectedCategory.value)
   }
   
   // 价格筛选

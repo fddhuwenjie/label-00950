@@ -422,8 +422,13 @@ class Cross_Border_Commerce {
     }
 
     private function format_product($product) {
-        $categories = wp_get_post_terms($product->get_id(), 'product_cat', array('fields' => 'names'));
-        $category = !empty($categories) ? $categories[0] : '';
+        $cat_terms = wp_get_post_terms($product->get_id(), 'product_cat', array('fields' => 'all'));
+        $category = '';
+        $categorySlug = '';
+        if (!empty($cat_terms) && !is_wp_error($cat_terms)) {
+            $category = $cat_terms[0]->name;
+            $categorySlug = $cat_terms[0]->slug;
+        }
 
         // 获取图片
         $image = $product->get_meta('_external_image');
@@ -447,6 +452,7 @@ class Cross_Border_Commerce {
             'salePrice' => $product->get_sale_price() ? floatval($product->get_sale_price()) : null,
             'stock' => $product->get_stock_quantity(),
             'category' => $category,
+            'categorySlug' => $categorySlug,
             'image' => $image ?: '',
             'images' => is_array($images) ? $images : array(),
             'description' => $product->get_description(),

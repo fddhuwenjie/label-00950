@@ -25,7 +25,7 @@
             v-for="cat in categories"
             :key="cat.id"
             :label="cat.name"
-            :value="cat.id"
+            :value="cat.name"
           />
         </el-select>
         <el-select v-model="statusFilter" placeholder="库存状态" clearable style="width: 110px">
@@ -298,7 +298,7 @@ const filteredProducts = computed(() => {
       p.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       p.sku.toLowerCase().includes(searchQuery.value.toLowerCase())
     const matchCategory = !categoryFilter.value || 
-      p.category === categories.value.find(c => c.id === categoryFilter.value)?.name
+      p.category === categoryFilter.value
     const matchStatus = !statusFilter.value || 
       (statusFilter.value === 'instock' ? p.stock > 0 : p.stock === 0)
     return matchSearch && matchCategory && matchStatus
