@@ -118,7 +118,7 @@ export const uploadApi = {
     const formData = new FormData()
     formData.append('file', file)
     const token = localStorage.getItem('token')
-    const resp = await fetch(`${BASE_URL}/upload`, {
+    const resp = await fetch(`${API_BASE}/upload`, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${token}` },
       body: formData,
