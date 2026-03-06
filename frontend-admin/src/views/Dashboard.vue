@@ -145,6 +145,39 @@ const stats = ref({
 
 const recentOrders = ref([])
 
+const salesChartOption = ref({
+  tooltip: { trigger: 'axis' },
+  grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
+  xAxis: { type: 'category', boundaryGap: false, data: [] },
+  yAxis: { type: 'value' },
+  series: [{
+    name: '销售额', type: 'line', smooth: true,
+    areaStyle: {
+      color: { type: 'linear', x: 0, y: 0, x2: 0, y2: 1,
+        colorStops: [{ offset: 0, color: 'rgba(102, 126, 234, 0.5)' }, { offset: 1, color: 'rgba(102, 126, 234, 0.1)' }]
+      }
+    },
+    lineStyle: { color: '#667eea' },
+    itemStyle: { color: '#667eea' },
+    data: []
+  }]
+})
+
+const orderPieOption = ref({
+  tooltip: { trigger: 'item' },
+  legend: { bottom: '5%', left: 'center' },
+  series: [{
+    type: 'pie', radius: ['40%', '70%'], avoidLabelOverlap: false,
+    itemStyle: { borderRadius: 10, borderColor: '#fff', borderWidth: 2 },
+    label: { show: false, position: 'center' },
+    emphasis: { label: { show: true, fontSize: 20, fontWeight: 'bold' } },
+    labelLine: { show: false },
+    data: []
+  }]
+})
+
+const pieColors = ['#67c23a', '#409eff', '#e6a23c', '#909399', '#f56c6c', '#9b59b6', '#e74c3c']
+
 onMounted(async () => {
   try {
     const dashboard = await dashboardApi.get()
@@ -153,6 +186,20 @@ onMounted(async () => {
       monthRevenue: dashboard.revenue || 0,
       productsCount: dashboard.products_count || 0,
       usersCount: dashboard.users_count || 0,
+    }
+
+    // 更新销售趋势图表（从API获取真实数据）
+    if (dashboard.sales_trend) {
+      salesChartOption.value.xAxis.data = dashboard.sales_trend.months || []
+      salesChartOption.value.series[0].data = dashboard.sales_trend.data || []
+    }
+
+    // 更新订单状态饼图（从API获取真实数据）
+    if (dashboard.order_status && dashboard.order_status.length > 0) {
+      orderPieOption.value.series[0].data = dashboard.order_status.map((item, i) => ({
+        value: item.value, name: item.name,
+        itemStyle: { color: pieColors[i % pieColors.length] }
+      }))
     }
   } catch (e) {
     console.error('加载仪表盘数据失败:', e)
@@ -172,124 +219,19 @@ onMounted(async () => {
   }
 })
 
-const salesChartOption = ref({
-  tooltip: {
-    trigger: 'axis'
-  },
-  grid: {
-    left: '3%',
-    right: '4%',
-    bottom: '3%',
-    containLabel: true
-  },
-  xAxis: {
-    type: 'category',
-    boundaryGap: false,
-    data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月']
-  },
-  yAxis: {
-    type: 'value'
-  },
-  series: [
-    {
-      name: '销售额',
-      type: 'line',
-      smooth: true,
-      areaStyle: {
-        color: {
-          type: 'linear',
-          x: 0,
-          y: 0,
-          x2: 0,
-          y2: 1,
-          colorStops: [
-            { offset: 0, color: 'rgba(102, 126, 234, 0.5)' },
-            { offset: 1, color: 'rgba(102, 126, 234, 0.1)' }
-          ]
-        }
-      },
-      lineStyle: {
-        color: '#667eea'
-      },
-      itemStyle: {
-        color: '#667eea'
-      },
-      data: [82000, 93200, 90100, 93400, 129000, 133000, 128560]
-    }
-  ]
-})
-
-const orderPieOption = ref({
-  tooltip: {
-    trigger: 'item'
-  },
-  legend: {
-    bottom: '5%',
-    left: 'center'
-  },
-  series: [
-    {
-      type: 'pie',
-      radius: ['40%', '70%'],
-      avoidLabelOverlap: false,
-      itemStyle: {
-        borderRadius: 10,
-        borderColor: '#fff',
-        borderWidth: 2
-      },
-      label: {
-        show: false,
-        position: 'center'
-      },
-      emphasis: {
-        label: {
-          show: true,
-          fontSize: 20,
-          fontWeight: 'bold'
-        }
-      },
-      labelLine: {
-        show: false
-      },
-      data: [
-        { value: 48, name: '已完成', itemStyle: { color: '#67c23a' } },
-        { value: 23, name: '处理中', itemStyle: { color: '#409eff' } },
-        { value: 18, name: '待发货', itemStyle: { color: '#e6a23c' } },
-        { value: 11, name: '待付款', itemStyle: { color: '#909399' } }
-      ]
-    }
-  ]
-})
-
 const formatCurrency = (value) => {
   return '$' + value.toLocaleString()
 }
 
 const getStatusType = (status) => {
-  const types = {
-    pending: 'info',
-    processing: 'warning',
-    shipping: '',
-    completed: 'success',
-    cancelled: 'danger'
-  }
+  const types = { pending: 'info', processing: 'warning', 'on-hold': '', completed: 'success', cancelled: 'danger' }
   return types[status] || ''
 }
 
 const getStatusText = (status) => {
-  const texts = {
-    pending: '待付款',
-    processing: '处理中',
-    shipping: '配送中',
-    completed: '已完成',
-    cancelled: '已取消'
-  }
+  const texts = { pending: '待付款', processing: '处理中', 'on-hold': '待发货', completed: '已完成', cancelled: '已取消' }
   return texts[status] || status
 }
-
-onMounted(() => {
-  // 这里可以调用 API 获取真实数据
-})
 </script>
 
 <style lang="scss" scoped>

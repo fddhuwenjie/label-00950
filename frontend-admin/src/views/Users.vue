@@ -121,9 +121,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, computed, onMounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
+import { userManageApi } from '../utils/api'
 
 const loading = ref(false)
 const searchQuery = ref('')
@@ -133,13 +134,7 @@ const pageSize = ref(10)
 const dialogVisible = ref(false)
 const editingUser = ref(null)
 
-const users = ref([
-  { id: 1, name: 'Admin', email: 'admin@example.com', role: 'admin', orders: 0, totalSpent: 0, status: 'active', registerDate: '2024-01-01', avatar: '' },
-  { id: 2, name: 'John Doe', email: 'john@example.com', role: 'customer', orders: 15, totalSpent: 2450.50, status: 'active', registerDate: '2024-01-05', avatar: '' },
-  { id: 3, name: 'Jane Smith', email: 'jane@example.com', role: 'customer', orders: 8, totalSpent: 1299.00, status: 'active', registerDate: '2024-01-08', avatar: '' },
-  { id: 4, name: '王小明', email: 'xiaoming@example.com', role: 'customer', orders: 3, totalSpent: 267.00, status: 'active', registerDate: '2024-01-10', avatar: '' },
-  { id: 5, name: 'Bob Wilson', email: 'bob@example.com', role: 'customer', orders: 0, totalSpent: 0, status: 'disabled', registerDate: '2024-01-12', avatar: '' },
-])
+const users = ref([])
 
 const userForm = ref({
   name: '',
@@ -147,6 +142,23 @@ const userForm = ref({
   password: '',
   role: 'customer'
 })
+
+const fetchUsers = async () => {
+  loading.value = true
+  try {
+    const params = {}
+    if (roleFilter.value) params.role = roleFilter.value === 'admin' ? 'administrator' : roleFilter.value
+    if (searchQuery.value) params.search = searchQuery.value
+    const data = await userManageApi.getAll(params)
+    users.value = Array.isArray(data) ? data : []
+  } catch (e) {
+    console.error('获取用户失败', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(() => fetchUsers())
 
 const filteredUsers = computed(() => {
   return users.value.filter(u => {
@@ -166,62 +178,49 @@ const paginatedUsers = computed(() => {
 
 const showAddDialog = () => {
   editingUser.value = null
-  userForm.value = {
-    name: '',
-    email: '',
-    password: '',
-    role: 'customer'
-  }
+  userForm.value = { name: '', email: '', password: '', role: 'customer' }
   dialogVisible.value = true
 }
 
 const editUser = (user) => {
   editingUser.value = user
-  userForm.value = {
-    name: user.name,
-    email: user.email,
-    password: '',
-    role: user.role
-  }
+  userForm.value = { name: user.name, email: user.email, password: '', role: user.role }
   dialogVisible.value = true
 }
 
-const saveUser = () => {
+const saveUser = async () => {
   if (!userForm.value.name || !userForm.value.email) {
     ElMessage.error('请填写用户名和邮箱')
     return
   }
-  if (editingUser.value) {
-    // 编辑：更新原数据
-    editingUser.value.name = userForm.value.name
-    editingUser.value.email = userForm.value.email
-    editingUser.value.role = userForm.value.role
-    ElMessage.success('用户已更新')
-  } else {
-    // 新增
-    if (!userForm.value.password) {
-      ElMessage.error('请设置密码')
-      return
+  try {
+    if (editingUser.value) {
+      await userManageApi.update(editingUser.value.id, userForm.value)
+      ElMessage.success('用户已更新')
+    } else {
+      if (!userForm.value.password) {
+        ElMessage.error('请设置密码')
+        return
+      }
+      await userManageApi.create(userForm.value)
+      ElMessage.success('用户已添加')
     }
-    users.value.push({
-      id: Date.now(),
-      name: userForm.value.name,
-      email: userForm.value.email,
-      role: userForm.value.role,
-      orders: 0,
-      totalSpent: 0,
-      status: 'active',
-      registerDate: new Date().toISOString().split('T')[0],
-      avatar: ''
-    })
-    ElMessage.success('用户已添加')
+    dialogVisible.value = false
+    await fetchUsers()
+  } catch (e) {
+    ElMessage.error(e.message || '操作失败')
   }
-  dialogVisible.value = false
 }
 
-const toggleStatus = (user) => {
-  user.status = user.status === 'active' ? 'disabled' : 'active'
-  ElMessage.success(`用户已${user.status === 'active' ? '启用' : '禁用'}`)
+const toggleStatus = async (user) => {
+  const newStatus = user.status === 'active' ? 'disabled' : 'active'
+  try {
+    await userManageApi.update(user.id, { status: newStatus })
+    user.status = newStatus
+    ElMessage.success(`用户已${newStatus === 'active' ? '启用' : '禁用'}`)
+  } catch (e) {
+    ElMessage.error('操作失败')
+  }
 }
 </script>
 

@@ -107,6 +107,14 @@ export const settingsApi = {
   update: (data) => api.post('/settings', data),
 }
 
+// ===== 用户管理 API =====
+export const userManageApi = {
+  getAll: (params = {}) => api.get('/users', params),
+  create: (data) => api.post('/users', data),
+  update: (id, data) => api.put(`/users/${id}`, data),
+  delete: (id) => api.delete(`/users/${id}`),
+}
+
 // ===== 仪表盘 API =====
 export const dashboardApi = {
   get: () => api.get('/dashboard'),

@@ -29,11 +29,21 @@ class Cross_Border_Commerce {
     private function __construct() {
         $this->includes();
         add_action('rest_api_init', array($this, 'register_routes'));
-        // 允许 CORS
+        // 允许 CORS（根据请求来源动态设置）
         add_action('rest_api_init', function() {
             remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
             add_filter('rest_pre_serve_request', function($value) {
-                header('Access-Control-Allow-Origin: *');
+                $origin = get_http_origin();
+                $allowed_origins = array(
+                    'http://localhost:9081',
+                    'http://localhost:9082',
+                    'http://localhost:9080',
+                );
+                if (in_array($origin, $allowed_origins)) {
+                    header('Access-Control-Allow-Origin: ' . $origin);
+                } else {
+                    header('Access-Control-Allow-Origin: http://localhost:9081');
+                }
                 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
                 header('Access-Control-Allow-Headers: Content-Type, Authorization');
                 header('Access-Control-Allow-Credentials: true');
@@ -203,6 +213,31 @@ class Cross_Border_Commerce {
         register_rest_route($namespace, '/settings', array(
             'methods' => 'POST',
             'callback' => array($this, 'update_settings'),
+            'permission_callback' => array($this, 'check_admin_permission'),
+        ));
+
+        // ===== 用户管理 API（管理员） =====
+        register_rest_route($namespace, '/users', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_users'),
+            'permission_callback' => array($this, 'check_admin_permission'),
+        ));
+
+        register_rest_route($namespace, '/users/(?P<id>\d+)', array(
+            'methods' => 'PUT',
+            'callback' => array($this, 'update_user'),
+            'permission_callback' => array($this, 'check_admin_permission'),
+        ));
+
+        register_rest_route($namespace, '/users', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'create_user_admin'),
+            'permission_callback' => array($this, 'check_admin_permission'),
+        ));
+
+        register_rest_route($namespace, '/users/(?P<id>\d+)', array(
+            'methods' => 'DELETE',
+            'callback' => array($this, 'delete_user'),
             'permission_callback' => array($this, 'check_admin_permission'),
         ));
 
@@ -446,14 +481,32 @@ class Cross_Border_Commerce {
         if (is_wp_error($wc_check)) return $wc_check;
         $params = $request->get_json_params();
 
-        $product = new WC_Product_Simple();
-        $product->set_name(sanitize_text_field($params['name'] ?? ''));
-        $product->set_sku(sanitize_text_field($params['sku'] ?? ''));
-        $product->set_regular_price($params['price'] ?? 0);
-        if (!empty($params['salePrice'])) {
-            $product->set_sale_price($params['salePrice']);
+        // 参数校验
+        $name = sanitize_text_field($params['name'] ?? '');
+        if (empty($name)) {
+            return new WP_Error('invalid_params', '商品名称不能为空', array('status' => 400));
         }
-        $product->set_stock_quantity(intval($params['stock'] ?? 0));
+        $price = floatval($params['price'] ?? 0);
+        if ($price < 0) {
+            return new WP_Error('invalid_params', '价格不能为负数', array('status' => 400));
+        }
+        $sale_price = isset($params['salePrice']) && $params['salePrice'] !== '' ? floatval($params['salePrice']) : null;
+        if ($sale_price !== null && ($sale_price < 0 || $sale_price >= $price)) {
+            return new WP_Error('invalid_params', '促销价必须大于0且小于原价', array('status' => 400));
+        }
+        $stock = intval($params['stock'] ?? 0);
+        if ($stock < 0) {
+            return new WP_Error('invalid_params', '库存不能为负数', array('status' => 400));
+        }
+
+        $product = new WC_Product_Simple();
+        $product->set_name($name);
+        $product->set_sku(sanitize_text_field($params['sku'] ?? ''));
+        $product->set_regular_price($price);
+        if ($sale_price !== null) {
+            $product->set_sale_price($sale_price);
+        }
+        $product->set_stock_quantity($stock);
         $product->set_manage_stock(true);
         $product->set_description(sanitize_textarea_field($params['description'] ?? ''));
         $product->set_short_description(sanitize_textarea_field($params['description'] ?? ''));
@@ -468,11 +521,26 @@ class Cross_Border_Commerce {
 
         // 设置图片
         if (!empty($params['image'])) {
-            // 存储外部图片 URL 到 meta
-            $product->update_meta_data('_external_image', $params['image']);
+            $image_url = $params['image'];
+            // 尝试从 WordPress 媒体库查找对应的 attachment
+            $att_id = attachment_url_to_postid($image_url);
+            if ($att_id) {
+                $product->set_image_id($att_id);
+            } else {
+                $product->update_meta_data('_external_image', $image_url);
+            }
         }
-        if (!empty($params['images'])) {
-            $product->update_meta_data('_external_images', $params['images']);
+        if (!empty($params['images']) && is_array($params['images'])) {
+            $gallery_ids = array();
+            foreach ($params['images'] as $img_url) {
+                $aid = attachment_url_to_postid($img_url);
+                if ($aid) $gallery_ids[] = $aid;
+            }
+            if (!empty($gallery_ids)) {
+                $product->set_gallery_image_ids($gallery_ids);
+            } else {
+                $product->update_meta_data('_external_images', $params['images']);
+            }
         }
 
         $product->set_status('publish');
@@ -510,10 +578,25 @@ class Cross_Border_Commerce {
         }
 
         if (!empty($params['image'])) {
-            $product->update_meta_data('_external_image', $params['image']);
+            $image_url = $params['image'];
+            $att_id = attachment_url_to_postid($image_url);
+            if ($att_id) {
+                $product->set_image_id($att_id);
+            } else {
+                $product->update_meta_data('_external_image', $image_url);
+            }
         }
-        if (!empty($params['images'])) {
-            $product->update_meta_data('_external_images', $params['images']);
+        if (!empty($params['images']) && is_array($params['images'])) {
+            $gallery_ids = array();
+            foreach ($params['images'] as $img_url) {
+                $aid = attachment_url_to_postid($img_url);
+                if ($aid) $gallery_ids[] = $aid;
+            }
+            if (!empty($gallery_ids)) {
+                $product->set_gallery_image_ids($gallery_ids);
+            } else {
+                $product->update_meta_data('_external_images', $params['images']);
+            }
         }
 
         $product->save();
@@ -901,19 +984,147 @@ class Cross_Border_Commerce {
     }
 
     // ===== 仪表盘 =====
+    // ===== 用户管理 =====
+    public function get_users($request) {
+        $args = array('orderby' => 'registered', 'order' => 'DESC', 'number' => 100);
+        $role = $request->get_param('role');
+        if ($role) $args['role'] = $role;
+        $search = $request->get_param('search');
+        if ($search) $args['search'] = '*' . $search . '*';
+
+        $user_query = new WP_User_Query($args);
+        $users = array();
+        foreach ($user_query->get_results() as $u) {
+            $order_count = 0;
+            if (function_exists('wc_get_orders')) {
+                $orders = wc_get_orders(array('customer_id' => $u->ID, 'limit' => -1, 'return' => 'ids'));
+                $order_count = count($orders);
+            }
+            $users[] = array(
+                'id' => $u->ID,
+                'name' => $u->display_name,
+                'email' => $u->user_email,
+                'role' => in_array('administrator', $u->roles) ? 'admin' : 'customer',
+                'orders' => $order_count,
+                'status' => get_user_meta($u->ID, '_account_status', true) ?: 'active',
+                'registered' => $u->user_registered,
+                'avatar' => get_avatar_url($u->ID, array('size' => 80)),
+            );
+        }
+        return rest_ensure_response($users);
+    }
+
+    public function create_user_admin($request) {
+        $params = $request->get_json_params();
+        $username = sanitize_user($params['name'] ?? '');
+        $email = sanitize_email($params['email'] ?? '');
+        $password = $params['password'] ?? wp_generate_password();
+        $role = ($params['role'] ?? 'customer') === 'admin' ? 'administrator' : 'customer';
+
+        if (empty($username) || empty($email)) {
+            return new WP_Error('invalid_params', '用户名和邮箱不能为空', array('status' => 400));
+        }
+        $user_id = wp_create_user($username, $password, $email);
+        if (is_wp_error($user_id)) {
+            return new WP_Error('create_failed', $user_id->get_error_message(), array('status' => 400));
+        }
+        wp_update_user(array('ID' => $user_id, 'role' => $role, 'display_name' => $username));
+        $u = get_userdata($user_id);
+        return rest_ensure_response(array(
+            'id' => $u->ID, 'name' => $u->display_name, 'email' => $u->user_email,
+            'role' => $role === 'administrator' ? 'admin' : 'customer',
+            'orders' => 0, 'status' => 'active', 'registered' => $u->user_registered,
+            'avatar' => get_avatar_url($u->ID, array('size' => 80)),
+        ));
+    }
+
+    public function update_user($request) {
+        $id = intval($request->get_param('id'));
+        $u = get_userdata($id);
+        if (!$u) return new WP_Error('not_found', '用户不存在', array('status' => 404));
+
+        $params = $request->get_json_params();
+        $update = array('ID' => $id);
+        if (isset($params['name'])) $update['display_name'] = sanitize_text_field($params['name']);
+        if (isset($params['email'])) $update['user_email'] = sanitize_email($params['email']);
+        if (isset($params['role'])) {
+            $update['role'] = $params['role'] === 'admin' ? 'administrator' : 'customer';
+        }
+        if (isset($params['status'])) {
+            update_user_meta($id, '_account_status', sanitize_text_field($params['status']));
+        }
+        $result = wp_update_user($update);
+        if (is_wp_error($result)) {
+            return new WP_Error('update_failed', $result->get_error_message(), array('status' => 400));
+        }
+        $u = get_userdata($id);
+        return rest_ensure_response(array(
+            'id' => $u->ID, 'name' => $u->display_name, 'email' => $u->user_email,
+            'role' => in_array('administrator', $u->roles) ? 'admin' : 'customer',
+            'status' => get_user_meta($id, '_account_status', true) ?: 'active',
+        ));
+    }
+
+    public function delete_user($request) {
+        $id = intval($request->get_param('id'));
+        require_once(ABSPATH . 'wp-admin/includes/user.php');
+        if (wp_delete_user($id)) {
+            return rest_ensure_response(array('message' => '用户已删除'));
+        }
+        return new WP_Error('delete_failed', '删除失败', array('status' => 400));
+    }
+
     public function get_dashboard($request) {
         $wc_check = $this->ensure_wc_loaded();
         if (is_wp_error($wc_check)) return $wc_check;
         $orders_count = 0;
         $revenue = 0;
-        $orders = wc_get_orders(array('limit' => -1, 'status' => array('processing', 'completed')));
-        foreach ($orders as $order) {
-            $orders_count++;
-            $revenue += floatval($order->get_total());
+        $all_orders = wc_get_orders(array('limit' => -1, 'status' => array('pending', 'processing', 'on-hold', 'completed', 'cancelled', 'refunded', 'failed')));
+
+        // 统计订单状态分布
+        $status_map = array('pending' => 0, 'processing' => 0, 'on-hold' => 0, 'completed' => 0, 'cancelled' => 0, 'refunded' => 0, 'failed' => 0);
+        // 统计近7个月销售趋势
+        $monthly_sales = array();
+        for ($i = 6; $i >= 0; $i--) {
+            $key = date('Y-m', strtotime("-{$i} months"));
+            $monthly_sales[$key] = 0;
+        }
+
+        foreach ($all_orders as $order) {
+            $status = $order->get_status();
+            if (isset($status_map[$status])) $status_map[$status]++;
+            if (in_array($status, array('processing', 'completed'))) {
+                $orders_count++;
+                $total = floatval($order->get_total());
+                $revenue += $total;
+                $month_key = date('Y-m', strtotime($order->get_date_created()));
+                if (isset($monthly_sales[$month_key])) {
+                    $monthly_sales[$month_key] += $total;
+                }
+            }
         }
 
         $products_count = wp_count_posts('product');
         $users_count = count_users();
+
+        // 构建图表数据
+        $months = array();
+        $sales_data = array();
+        foreach ($monthly_sales as $m => $s) {
+            $months[] = date('n月', strtotime($m . '-01'));
+            $sales_data[] = round($s, 2);
+        }
+
+        $status_chart = array();
+        $status_labels = array('pending' => '待付款', 'processing' => '处理中', 'on-hold' => '待发货', 'completed' => '已完成', 'cancelled' => '已取消', 'refunded' => '已退款', 'failed' => '失败');
+        foreach ($status_map as $k => $v) {
+            if ($v > 0) {
+                $status_chart[] = array('name' => $status_labels[$k] ?? $k, 'value' => $v);
+            }
+        }
+        if (empty($status_chart)) {
+            $status_chart[] = array('name' => '暂无订单', 'value' => 0);
+        }
 
         return rest_ensure_response(array(
             'orders_count' => $orders_count,
@@ -921,6 +1132,8 @@ class Cross_Border_Commerce {
             'products_count' => $products_count->publish ?? 0,
             'users_count' => $users_count['total_users'] ?? 0,
             'currency' => get_woocommerce_currency(),
+            'sales_trend' => array('months' => $months, 'data' => $sales_data),
+            'order_status' => $status_chart,
         ));
     }
 }

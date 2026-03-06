@@ -73,7 +73,7 @@ docker-compose down -v
 | 配置项 | 默认值 |
 |--------|------|
 | 用户名 | admin |
-| 密码 | admin123 |
+| 密码 | Adm!n_Cbc#2024Xk |
 | 邮箱 | admin@example.com |
 
 ### 测试用户账号（用户端商城）
@@ -84,7 +84,7 @@ docker-compose down -v
 | 密码 | test123 |
 | 邮箱 | test@example.com |
 
-⚠️ 生产环境部署前请务必修改默认密码。
+⚠️ 生产环境部署前请务必修改 `.env` 中的所有密码和密钥。
 
 ## 题目内容
 基于 wordprdess 框架做一个跨境电商商城 包含前端商城和后台管理系统
