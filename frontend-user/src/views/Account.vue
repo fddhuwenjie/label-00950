@@ -134,10 +134,13 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import toast from '@/utils/toast'
+import { authApi } from '@/utils/api'
 
+const router = useRouter()
 const userStore = useUserStore()
 const activeSection = ref('profile')
 const profileSaving = ref(false)
@@ -150,117 +153,78 @@ const navItems = [
 ]
 
 const profile = reactive({
-  username: userStore.userInfo.name || '',
-  nickname: '',
-  email: userStore.userInfo.email || '',
-  phone: ''
-})
-
-const profileErrors = reactive({
   username: '',
+  nickname: '',
   email: '',
   phone: ''
 })
 
-const password = reactive({
-  current: '',
-  new: '',
-  confirm: ''
+const profileErrors = reactive({ username: '', email: '', phone: '' })
+const password = reactive({ current: '', new: '', confirm: '' })
+const passwordErrors = reactive({ current: '', new: '', confirm: '' })
+
+// 地址管理
+const addresses = ref([])
+const ADDR_KEY = 'user_addresses'
+
+onMounted(() => {
+  // 从 userStore 加载个人信息
+  profile.username = userStore.userInfo.name || ''
+  profile.email = userStore.userInfo.email || ''
+  // 从 localStorage 加载额外信息
+  const saved = localStorage.getItem('user_profile')
+  if (saved) {
+    const data = JSON.parse(saved)
+    profile.nickname = data.nickname || ''
+    profile.phone = data.phone || ''
+  }
+  // 加载地址
+  const addrSaved = localStorage.getItem(ADDR_KEY)
+  if (addrSaved) addresses.value = JSON.parse(addrSaved)
 })
 
-const passwordErrors = reactive({
-  current: '',
-  new: '',
-  confirm: ''
-})
-
-const addresses = ref([
-  { id: 1, name: '张三', phone: '138****8888', address: '北京市朝阳区xxx街道xxx号', isDefault: true },
-  { id: 2, name: '张三', phone: '139****9999', address: '上海市浦东新区xxx路xxx号', isDefault: false },
-])
-
-// 验证个人信息字段
 const validateProfileField = (field) => {
   switch (field) {
     case 'username':
-      if (!profile.username.trim()) {
-        profileErrors.username = '请输入用户名'
-      } else if (profile.username.length < 2) {
-        profileErrors.username = '用户名至少2个字符'
-      } else {
-        profileErrors.username = ''
-      }
+      profileErrors.username = !profile.username.trim() ? '请输入用户名' : profile.username.length < 2 ? '用户名至少2个字符' : ''
       break
     case 'email':
-      if (!profile.email.trim()) {
-        profileErrors.email = '请输入电子邮箱'
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
-        profileErrors.email = '请输入有效的邮箱地址'
-      } else {
-        profileErrors.email = ''
-      }
+      profileErrors.email = !profile.email.trim() ? '请输入电子邮箱' : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email) ? '请输入有效的邮箱地址' : ''
       break
     case 'phone':
       if (profile.phone && profile.phone.trim()) {
-        const phoneClean = profile.phone.replace(/[\s\-()]/g, '')
-        const chinaPhone = /^1[3-9]\d{9}$/.test(phoneClean)
-        const intlPhone = /^\+?\d{8,15}$/.test(phoneClean)
-        if (!chinaPhone && !intlPhone) {
-          profileErrors.phone = '请输入有效的手机号码'
-        } else {
-          profileErrors.phone = ''
-        }
-      } else {
-        profileErrors.phone = ''
-      }
+        const p = profile.phone.replace(/[\s\-()]/g, '')
+        profileErrors.phone = (/^1[3-9]\d{9}$/.test(p) || /^\+?\d{8,15}$/.test(p)) ? '' : '请输入有效的手机号码'
+      } else { profileErrors.phone = '' }
       break
   }
   return !profileErrors[field]
 }
 
-// 验证密码字段
 const validatePasswordField = (field) => {
   switch (field) {
-    case 'current':
-      if (!password.current) {
-        passwordErrors.current = '请输入当前密码'
-      } else {
-        passwordErrors.current = ''
-      }
-      break
-    case 'new':
-      if (!password.new) {
-        passwordErrors.new = '请输入新密码'
-      } else if (password.new.length < 6) {
-        passwordErrors.new = '密码至少6个字符'
-      } else {
-        passwordErrors.new = ''
-      }
-      break
-    case 'confirm':
-      if (!password.confirm) {
-        passwordErrors.confirm = '请确认新密码'
-      } else if (password.new !== password.confirm) {
-        passwordErrors.confirm = '两次输入的密码不一致'
-      } else {
-        passwordErrors.confirm = ''
-      }
-      break
+    case 'current': passwordErrors.current = !password.current ? '请输入当前密码' : ''; break
+    case 'new': passwordErrors.new = !password.new ? '请输入新密码' : password.new.length < 6 ? '密码至少6个字符' : ''; break
+    case 'confirm': passwordErrors.confirm = !password.confirm ? '请确认新密码' : password.new !== password.confirm ? '两次输入的密码不一致' : ''; break
   }
   return !passwordErrors[field]
 }
 
 const saveProfile = async () => {
-  // 验证所有字段
   if (!validateProfileField('username') || !validateProfileField('email')) {
-    toast.error('请完整填写个人信息')
-    return
+    toast.error('请完整填写个人信息'); return
   }
-  
   profileSaving.value = true
-  
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    // 持久化到 localStorage
+    localStorage.setItem('user_profile', JSON.stringify({
+      nickname: profile.nickname,
+      phone: profile.phone,
+    }))
+    // 更新 store
+    userStore.userInfo.name = profile.username
+    userStore.userInfo.email = profile.email
+    localStorage.setItem('userInfo', JSON.stringify(userStore.userInfo))
     toast.success('个人信息已更新')
   } catch (error) {
     toast.error('保存失败，请重试')
@@ -270,45 +234,44 @@ const saveProfile = async () => {
 }
 
 const changePassword = async () => {
-  // 验证所有字段
   const fields = ['current', 'new', 'confirm']
   let isValid = true
-  fields.forEach(field => {
-    if (!validatePasswordField(field)) {
-      isValid = false
-    }
-  })
-  
-  if (!isValid) {
-    return
-  }
-  
+  fields.forEach(f => { if (!validatePasswordField(f)) isValid = false })
+  if (!isValid) return
+
   passwordSaving.value = true
-  
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const token = localStorage.getItem('token')
+    const resp = await fetch('/wp-json/cbc/v1/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ current_password: password.current, new_password: password.new })
+    })
+    const data = await resp.json()
+    if (!resp.ok) throw new Error(data.message || '密码更新失败')
     toast.success('密码已更新')
-    // 清空表单
-    password.current = ''
-    password.new = ''
-    password.confirm = ''
+    password.current = ''; password.new = ''; password.confirm = ''
   } catch (error) {
-    toast.error('密码更新失败')
+    toast.error(error.message || '密码更新失败')
   } finally {
     passwordSaving.value = false
   }
 }
 
+// 地址管理 - 跳转到独立地址页面
 const editAddress = (addr) => {
-  toast.info('编辑地址功能开发中')
+  router.push('/addresses')
 }
-
 const deleteAddress = (addr) => {
-  toast.info('删除地址功能开发中')
+  const idx = addresses.value.findIndex(a => a === addr)
+  if (idx >= 0) {
+    addresses.value.splice(idx, 1)
+    localStorage.setItem(ADDR_KEY, JSON.stringify(addresses.value))
+    toast.success('地址已删除')
+  }
 }
-
 const showAddAddress = () => {
-  toast.info('添加地址功能开发中')
+  router.push('/addresses')
 }
 </script>
 

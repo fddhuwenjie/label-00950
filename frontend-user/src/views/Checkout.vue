@@ -147,7 +147,7 @@
           
           <p class="terms">
             点击"提交订单"即表示您同意我们的
-            <a href="#">服务条款</a> 和 <a href="#">隐私政策</a>
+            <a href="/terms" target="_blank">服务条款</a> 和 <a href="/privacy" target="_blank">隐私政策</a>
           </p>
         </div>
       </div>
@@ -396,7 +396,7 @@ const confirmPay = async () => {
   if (!pendingOrder.value) return
   paying.value = true
   try {
-    await orderApi.updateStatus(pendingOrder.value.id, 'processing')
+    await orderApi.pay(pendingOrder.value.id)
     toast.success('支付成功！订单正在处理中')
     showPayModal.value = false
     router.push('/orders')

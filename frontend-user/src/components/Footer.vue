@@ -83,9 +83,11 @@ import { reactive, onMounted } from 'vue'
 import { settingsApi } from '@/utils/api'
 
 const siteSettings = reactive({
+  siteName: '跨境电商商城',
   siteDescription: '汇聚全球顶级品牌，为您精选来自世界各地的优质好物',
   contactEmail: 'support@example.com',
   contactPhone: '+86 400-888-8888',
+  address: '中国上海市浦东新区陆家嘴金融贸易区世纪大道100号',
 })
 
 onMounted(async () => {

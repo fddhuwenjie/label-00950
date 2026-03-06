@@ -246,6 +246,13 @@ onMounted(async () => {
   } finally {
     loadingSettings.value = false
   }
+  // 从 localStorage 加载支付、货币、通知设置
+  try {
+    const local = JSON.parse(localStorage.getItem('localSettings') || '{}')
+    if (local.payment) Object.assign(paymentSettings, local.payment)
+    if (local.currency) Object.assign(currencySettings, local.currency)
+    if (local.notification) Object.assign(notificationSettings, local.notification)
+  } catch (e) {}
 })
 
 const handleMenuSelect = (index) => {

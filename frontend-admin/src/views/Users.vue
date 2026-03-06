@@ -187,7 +187,35 @@ const editUser = (user) => {
 }
 
 const saveUser = () => {
-  ElMessage.success(editingUser.value ? '用户已更新' : '用户已添加')
+  if (!userForm.value.name || !userForm.value.email) {
+    ElMessage.error('请填写用户名和邮箱')
+    return
+  }
+  if (editingUser.value) {
+    // 编辑：更新原数据
+    editingUser.value.name = userForm.value.name
+    editingUser.value.email = userForm.value.email
+    editingUser.value.role = userForm.value.role
+    ElMessage.success('用户已更新')
+  } else {
+    // 新增
+    if (!userForm.value.password) {
+      ElMessage.error('请设置密码')
+      return
+    }
+    users.value.push({
+      id: Date.now(),
+      name: userForm.value.name,
+      email: userForm.value.email,
+      role: userForm.value.role,
+      orders: 0,
+      totalSpent: 0,
+      status: 'active',
+      registerDate: new Date().toISOString().split('T')[0],
+      avatar: ''
+    })
+    ElMessage.success('用户已添加')
+  }
   dialogVisible.value = false
 }
 

@@ -112,4 +112,23 @@ export const dashboardApi = {
   get: () => api.get('/dashboard'),
 }
 
+// ===== 上传 API =====
+export const uploadApi = {
+  image: async (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const token = localStorage.getItem('token')
+    const resp = await fetch(`${BASE_URL}/upload`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData,
+    })
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}))
+      throw new Error(err.message || '上传失败')
+    }
+    return resp.json()
+  }
+}
+
 export default api

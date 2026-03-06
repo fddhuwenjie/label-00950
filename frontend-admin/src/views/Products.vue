@@ -210,7 +210,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Delete, Star } from '@element-plus/icons-vue'
-import { productApi, categoryApi } from '@/utils/api'
+import { productApi, categoryApi, uploadApi } from '@/utils/api'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -346,34 +346,31 @@ const triggerUpload = () => {
   fileInput.value?.click()
 }
 
-const handleFileChange = (event) => {
+const handleFileChange = async (event) => {
   const files = event.target.files
   if (!files || files.length === 0) return
   
-  Array.from(files).forEach(file => {
+  for (const file of Array.from(files)) {
     if (!file.type.startsWith('image/')) {
       ElMessage.error(`${file.name} 不是图片文件`)
-      return
+      continue
     }
     
     if (file.size > 5 * 1024 * 1024) {
       ElMessage.error(`${file.name} 大小超过 5MB`)
-      return
+      continue
     }
     
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      productForm.value.images.push(e.target?.result)
-      // 设置第一张为封面
+    try {
+      const result = await uploadApi.image(file)
+      productForm.value.images.push(result.url)
       if (productForm.value.images.length === 1) {
-        productForm.value.image = e.target?.result
+        productForm.value.image = result.url
       }
+    } catch (e) {
+      ElMessage.error(`${file.name} 上传失败: ${e.message}`)
     }
-    reader.onerror = () => {
-      ElMessage.error('图片读取失败')
-    }
-    reader.readAsDataURL(file)
-  })
+  }
   
   event.target.value = ''
   ElMessage.success('图片上传成功')

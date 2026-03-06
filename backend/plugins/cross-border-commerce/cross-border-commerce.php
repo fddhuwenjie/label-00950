@@ -88,6 +88,12 @@ class Cross_Border_Commerce {
             'permission_callback' => array($this, 'check_admin_permission'),
         ));
 
+        register_rest_route($namespace, '/upload', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'upload_image'),
+            'permission_callback' => array($this, 'check_admin_permission'),
+        ));
+
         // ===== 分类 API =====
         register_rest_route($namespace, '/categories', array(
             'methods' => 'GET',
@@ -114,6 +120,18 @@ class Cross_Border_Commerce {
             'permission_callback' => array($this, 'check_user_permission'),
         ));
 
+        register_rest_route($namespace, '/auth/change-password', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'change_password'),
+            'permission_callback' => array($this, 'check_user_permission'),
+        ));
+
+        register_rest_route($namespace, '/auth/forgot-password', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'forgot_password'),
+            'permission_callback' => '__return_true',
+        ));
+
         // ===== 订单 API =====
         register_rest_route($namespace, '/orders', array(
             'methods' => 'GET',
@@ -131,6 +149,12 @@ class Cross_Border_Commerce {
             'methods' => 'PUT',
             'callback' => array($this, 'update_order_status'),
             'permission_callback' => array($this, 'check_admin_permission'),
+        ));
+
+        register_rest_route($namespace, '/orders/(?P<id>\d+)/pay', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'pay_order'),
+            'permission_callback' => array($this, 'check_user_permission'),
         ));
 
         // ===== 跨境电商功能 API =====
@@ -303,6 +327,52 @@ class Cross_Border_Commerce {
             'name' => $user->display_name,
             'email' => $user->user_email,
             'role' => implode(',', $user->roles),
+        ));
+    }
+
+    public function change_password($request) {
+        $user = $this->get_user_from_token($request);
+        if (!$user) return new WP_Error('unauthorized', '未授权', array('status' => 401));
+
+        $params = $request->get_json_params();
+        $current = $params['current_password'] ?? '';
+        $new_pass = $params['new_password'] ?? '';
+
+        if (empty($current) || empty($new_pass)) {
+            return new WP_Error('missing_fields', '请填写当前密码和新密码', array('status' => 400));
+        }
+
+        if (!wp_check_password($current, $user->user_pass, $user->ID)) {
+            return new WP_Error('wrong_password', '当前密码不正确', array('status' => 400));
+        }
+
+        wp_set_password($new_pass, $user->ID);
+        // 生成新 token（密码变更后旧 token 仍有效，因为我们用的是 JWT）
+        $token = $this->generate_token($user->ID);
+
+        return rest_ensure_response(array(
+            'message' => '密码已更新',
+            'token' => $token,
+        ));
+    }
+
+    public function forgot_password($request) {
+        $params = $request->get_json_params();
+        $email = sanitize_email($params['email'] ?? '');
+
+        if (empty($email)) {
+            return new WP_Error('missing_email', '请输入邮箱', array('status' => 400));
+        }
+
+        $user = get_user_by('email', $email);
+        if ($user) {
+            // 使用 WordPress 内置的密码重置功能
+            retrieve_password($user->user_login);
+        }
+
+        // 无论邮箱是否存在都返回成功（安全考虑）
+        return rest_ensure_response(array(
+            'message' => '如果该邮箱已注册，重置链接已发送',
         ));
     }
 
@@ -631,6 +701,62 @@ class Cross_Border_Commerce {
         ));
     }
 
+    public function pay_order($request) {
+        $user = $this->get_user_from_token($request);
+        $order_id = intval($request->get_param('id'));
+        $order = wc_get_order($order_id);
+
+        if (!$order) {
+            return new WP_Error('not_found', '订单不存在', array('status' => 404));
+        }
+
+        // 验证订单属于当前用户
+        if ($order->get_customer_id() !== $user->ID) {
+            return new WP_Error('forbidden', '无权操作此订单', array('status' => 403));
+        }
+
+        // 只允许 pending 状态的订单支付
+        if ($order->get_status() !== 'pending') {
+            return new WP_Error('invalid_status', '该订单不是待付款状态', array('status' => 400));
+        }
+
+        $order->set_status('processing');
+        $order->set_date_paid(current_time('timestamp'));
+        $order->save();
+
+        return rest_ensure_response(array(
+            'id' => $order->get_id(),
+            'status' => $order->get_status(),
+            'message' => '支付成功',
+        ));
+    }
+
+    // ===== 图片上传 =====
+    public function upload_image($request) {
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/media.php');
+
+        $files = $request->get_file_params();
+        if (empty($files['file'])) {
+            return new WP_Error('no_file', '请选择文件', array('status' => 400));
+        }
+
+        $_FILES['upload'] = $files['file'];
+        $attachment_id = media_handle_upload('upload', 0);
+
+        if (is_wp_error($attachment_id)) {
+            return new WP_Error('upload_failed', $attachment_id->get_error_message(), array('status' => 500));
+        }
+
+        $url = wp_get_attachment_url($attachment_id);
+
+        return rest_ensure_response(array(
+            'id' => $attachment_id,
+            'url' => $url,
+        ));
+    }
+
     // ===== 跨境电商功能 =====
     public function convert_currency($request) {
         $amount = floatval($request->get_param('amount') ?: 0);
@@ -705,7 +831,7 @@ class Cross_Border_Commerce {
             'currencySymbol' => get_woocommerce_currency_symbol(),
             'contactEmail' => get_option('cbc_contact_email', get_option('admin_email')),
             'contactPhone' => get_option('cbc_contact_phone', '+86 400-888-8888'),
-            'address' => get_option('cbc_address', ''),
+            'address' => get_option('cbc_address', '中国上海市浦东新区陆家嘴金融贸易区世纪大道100号'),
             'defaultShippingFee' => floatval(get_option('cbc_default_shipping_fee', 15)),
             'estimatedDelivery' => get_option('cbc_estimated_delivery', '7-15个工作日'),
         ));

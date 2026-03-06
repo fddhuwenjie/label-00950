@@ -48,7 +48,7 @@
           <div class="form-group">
             <div class="label-row">
               <label class="form-label">密码</label>
-              <a href="#" class="forgot-link">忘记密码？</a>
+              <router-link to="/forgot-password" class="forgot-link">忘记密码？</router-link>
             </div>
             <div class="input-wrapper">
               <span class="input-icon">

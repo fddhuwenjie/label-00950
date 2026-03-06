@@ -92,6 +92,7 @@ export const orderApi = {
   getAll: (params = {}) => api.get('/orders', params),
   create: (data) => api.post('/orders', data),
   updateStatus: (id, status) => api.put(`/orders/${id}/status`, { status }),
+  pay: (id) => api.post(`/orders/${id}/pay`),
 }
 
 // ===== 跨境电商功能 API =====

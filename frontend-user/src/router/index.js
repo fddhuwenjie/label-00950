@@ -59,6 +59,27 @@ const routes = [
     path: '/help/:topic',
     name: 'HelpTopic',
     component: () => import('@/views/Help.vue')
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/views/ForgotPassword.vue')
+  },
+  {
+    path: '/terms',
+    name: 'Terms',
+    component: () => import('@/views/Terms.vue')
+  },
+  {
+    path: '/privacy',
+    name: 'Privacy',
+    component: () => import('@/views/Privacy.vue')
+  },
+  {
+    path: '/addresses',
+    name: 'Addresses',
+    component: () => import('@/views/Addresses.vue'),
+    meta: { requiresAuth: true }
   }
 ]
 

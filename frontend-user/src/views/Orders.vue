@@ -314,7 +314,7 @@ const closePayModal = () => {
 const confirmPay = async () => {
   if (payOrder.value) {
     try {
-      await orderApi.updateStatus(payOrder.value.rawId, 'processing')
+      await orderApi.pay(payOrder.value.rawId)
       payOrder.value.status = 'processing'
       toast.success('支付成功！订单正在处理中')
       closePayModal()

@@ -74,18 +74,18 @@ if [ ! -f "$INIT_DONE_FLAG" ]; then
     );
 
     $products = array(
-        array("iPhone 15 Pro Max 256GB 深空黑", "IP15PM-256-BK", 1199, 1099, 50, "数码电子", "全新 iPhone 15 Pro Max，搭载 A17 Pro 芯片", "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=400&h=400&fit=crop"),
-        array("MacBook Pro 14 M3 Pro 芯片", "MBP14-M3PRO", 1999, null, 30, "数码电子", "MacBook Pro 14 英寸，M3 Pro 芯片", "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=400&h=400&fit=crop"),
-        array("Sony WH-1000XM5 无线降噪耳机", "SONY-WH1000XM5", 399, 349, 80, "数码电子", "索尼旗舰降噪耳机", "https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=400&h=400&fit=crop"),
-        array("Apple Watch Ultra 2 钛金属", "AW-ULTRA2-TI", 799, null, 25, "数码电子", "Apple Watch Ultra 2", "https://images.unsplash.com/photo-1434493789847-2f02dc6ca35d?w=400&h=400&fit=crop"),
-        array("Dyson V15 Detect 智能吸尘器", "DYSON-V15", 749, 699, 15, "家居生活", "戴森智能吸尘器", "https://images.unsplash.com/photo-1558317374-067fb5f30001?w=400&h=400&fit=crop"),
-        array("La Mer 海蓝之谜修护精华面霜", "LAMER-CREAM-60", 350, 320, 40, "美妆护肤", "海蓝之谜修护面霜 60ml", "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&h=400&fit=crop"),
-        array("Gucci GG Marmont 链条包", "GUCCI-MARMONT", 2300, null, 10, "时尚服饰", "Gucci 经典链条包", "https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=400&fit=crop"),
-        array("Nintendo Switch OLED 白色款", "NSW-OLED-WH", 349, 299, 60, "数码电子", "Nintendo Switch OLED 版本", "https://images.unsplash.com/photo-1578303512597-81e6cc155b3e?w=400&h=400&fit=crop"),
-        array("SK-II 神仙水护肤精华露 230ml", "SKII-FTE-230", 185, 165, 100, "美妆护肤", "SK-II 神仙水", "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=400&fit=crop"),
-        array("Nike Air Jordan 1 Retro High OG", "NIKE-AJ1-OG", 180, null, 45, "时尚服饰", "Nike Air Jordan 1", "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&h=400&fit=crop"),
-        array("Philips Sonicare 钻石智能电动牙刷", "PHILIPS-SONIC", 199, 149, 70, "家居生活", "飞利浦电动牙刷", "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=400&h=400&fit=crop"),
-        array("Coach Tabby 手提单肩包", "COACH-TABBY", 395, null, 20, "时尚服饰", "Coach Tabby 手提包", "https://images.unsplash.com/photo-1590874103328-eac38a683ce7?w=400&h=400&fit=crop"),
+        array("iPhone 15 Pro Max 256GB 深空黑", "IP15PM-256-BK", 1199, 1099, 50, "数码电子", "全新 iPhone 15 Pro Max，搭载 A17 Pro 芯片，钛金属设计，48MP 主摄像头，USB-C 接口", "/images/products/iphone15.jpg"),
+        array("MacBook Pro 14 M3 Pro 芯片", "MBP14-M3PRO", 1999, null, 30, "数码电子", "MacBook Pro 14 英寸，M3 Pro 芯片，18GB 统一内存，512GB SSD，Liquid Retina XDR 显示屏", "/images/products/macbook.jpg"),
+        array("Sony WH-1000XM5 无线降噪耳机", "SONY-WH1000XM5", 399, 349, 80, "数码电子", "索尼旗舰降噪耳机，30小时续航，自适应降噪，Hi-Res Audio 认证", "/images/products/sony-headphone.jpg"),
+        array("Apple Watch Ultra 2 钛金属", "AW-ULTRA2-TI", 799, null, 25, "数码电子", "Apple Watch Ultra 2，49mm 钛金属表壳，精准双频GPS，水深仪和水温传感器", "/images/products/apple-watch.jpg"),
+        array("Dyson V15 Detect 智能吸尘器", "DYSON-V15", 749, 699, 15, "家居生活", "戴森智能吸尘器，激光探测微尘，LCD屏幕实时显示，60分钟续航", "/images/products/dyson.jpg"),
+        array("La Mer 海蓝之谜修护精华面霜", "LAMER-CREAM-60", 350, 320, 40, "美妆护肤", "海蓝之谜修护面霜 60ml，深海巨藻精华，修护肌肤屏障，深层滋润", "/images/products/lamer.jpg"),
+        array("Gucci GG Marmont 链条包", "GUCCI-MARMONT", 2300, null, 10, "时尚服饰", "Gucci 经典链条包，绗缝皮革，双G金属配件，可拆卸链条肩带", "/images/products/gucci.jpg"),
+        array("Nintendo Switch OLED 白色款", "NSW-OLED-WH", 349, 299, 60, "数码电子", "Nintendo Switch OLED 版本，7英寸OLED屏幕，64GB存储，增强音效", "/images/products/switch.jpg"),
+        array("SK-II 神仙水护肤精华露 230ml", "SKII-FTE-230", 185, 165, 100, "美妆护肤", "SK-II 神仙水，超过90%天然成分PITERA精华，改善肤质，提亮肤色", "/images/products/skii.jpg"),
+        array("Nike Air Jordan 1 Retro High OG", "NIKE-AJ1-OG", 180, null, 45, "时尚服饰", "Nike Air Jordan 1 经典复刻，真皮鞋面，Air-Sole 缓震，经典黑红配色", "/images/products/nike-aj1.jpg"),
+        array("Philips Sonicare 钻石智能电动牙刷", "PHILIPS-SONIC", 199, 149, 70, "家居生活", "飞利浦电动牙刷，声波震动技术，智能压力感应，14天续航", "/images/products/philips.jpg"),
+        array("Coach Tabby 手提单肩包", "COACH-TABBY", 395, null, 20, "时尚服饰", "Coach Tabby 手提包，标志性Signature帆布，可调节肩带，多功能隔层", "/images/products/coach.jpg"),
     );
 
     // 检查是否已有商品
