@@ -210,7 +210,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search, Delete, Star } from '@element-plus/icons-vue'
-import { loadProducts, addProduct, updateProduct, deleteProduct as apiDeleteProduct } from '@/utils/productStorage'
+import { productApi, categoryApi } from '@/utils/api'
 
 const loading = ref(false)
 const saving = ref(false)
@@ -224,20 +224,32 @@ const editingProduct = ref(null)
 const formRef = ref(null)
 const fileInput = ref(null)
 
-const categories = ref([
-  { id: 1, name: '数码电子' },
-  { id: 2, name: '时尚服饰' },
-  { id: 3, name: '美妆护肤' },
-  { id: 4, name: '家居生活' },
-])
+const categories = ref([])
 
-// 从 API 加载商品数据
+// 从 WordPress API 加载商品数据
 const products = ref([])
 
 const fetchProducts = async () => {
   loading.value = true
   try {
-    products.value = await loadProducts()
+    const [prods, cats] = await Promise.all([
+      productApi.getAll(),
+      categoryApi.getAll(),
+    ])
+    products.value = prods
+    if (cats.length > 0) {
+      categories.value = cats
+    } else {
+      categories.value = [
+        { id: 1, name: '数码电子' },
+        { id: 2, name: '时尚服饰' },
+        { id: 3, name: '美妆护肤' },
+        { id: 4, name: '家居生活' },
+      ]
+    }
+  } catch (e) {
+    console.error('加载商品失败:', e)
+    ElMessage.error('加载商品失败')
   } finally {
     loading.value = false
   }
@@ -414,21 +426,21 @@ const saveProduct = async () => {
     
     if (editingProduct.value) {
       // 更新商品
-      const result = await updateProduct(editingProduct.value.id, formData)
-      if (result) {
+      try {
+        await productApi.update(editingProduct.value.id, formData)
         ElMessage.success('商品已更新')
         await fetchProducts()
-      } else {
-        ElMessage.error('更新失败')
+      } catch (e) {
+        ElMessage.error('更新失败: ' + e.message)
       }
     } else {
       // 添加商品
-      const result = await addProduct(formData)
-      if (result) {
+      try {
+        await productApi.create(formData)
         ElMessage.success('商品已添加')
         await fetchProducts()
-      } else {
-        ElMessage.error('添加失败')
+      } catch (e) {
+        ElMessage.error('添加失败: ' + e.message)
       }
     }
     
@@ -447,7 +459,7 @@ const handleDeleteProduct = async (product) => {
       '删除确认',
       { type: 'warning' }
     )
-    const success = await apiDeleteProduct(product.id)
+    const success = await productApi.delete(product.id)
     if (success) {
       ElMessage.success('商品已删除')
       await fetchProducts()

@@ -124,6 +124,7 @@ import {
   LegendComponent,
   GridComponent
 } from 'echarts/components'
+import { dashboardApi, orderApi } from '@/utils/api'
 
 use([
   CanvasRenderer,
@@ -136,19 +137,40 @@ use([
 ])
 
 const stats = ref({
-  todayOrders: 24,
-  monthRevenue: 128560,
-  productsCount: 356,
-  usersCount: 1892
+  todayOrders: 0,
+  monthRevenue: 0,
+  productsCount: 0,
+  usersCount: 0
 })
 
-const recentOrders = ref([
-  { id: '10086', customer: 'John Doe', total: 299.99, status: 'processing', date: '2024-01-15 14:30' },
-  { id: '10085', customer: 'Jane Smith', total: 159.50, status: 'completed', date: '2024-01-15 13:20' },
-  { id: '10084', customer: '王小明', total: 89.00, status: 'pending', date: '2024-01-15 12:15' },
-  { id: '10083', customer: 'Bob Wilson', total: 450.00, status: 'completed', date: '2024-01-15 11:00' },
-  { id: '10082', customer: '李华', total: 199.99, status: 'shipping', date: '2024-01-15 10:30' },
-])
+const recentOrders = ref([])
+
+onMounted(async () => {
+  try {
+    const dashboard = await dashboardApi.get()
+    stats.value = {
+      todayOrders: dashboard.orders_count || 0,
+      monthRevenue: dashboard.revenue || 0,
+      productsCount: dashboard.products_count || 0,
+      usersCount: dashboard.users_count || 0,
+    }
+  } catch (e) {
+    console.error('加载仪表盘数据失败:', e)
+  }
+
+  try {
+    const orders = await orderApi.getAll({ per_page: 5 })
+    recentOrders.value = orders.map(o => ({
+      id: o.number,
+      customer: o.billing?.name || '未知',
+      total: o.total,
+      status: o.status,
+      date: o.date,
+    }))
+  } catch (e) {
+    // 使用空数据
+  }
+})
 
 const salesChartOption = ref({
   tooltip: {

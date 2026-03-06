@@ -156,17 +156,30 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import toast from '@/utils/toast'
-import { getShippingSettings } from '@/utils/settings'
+import { settingsApi, orderApi, crossBorderApi } from '@/utils/api'
 
 const router = useRouter()
 const cartStore = useCartStore()
 const submitting = ref(false)
-const shippingSettings = reactive(getShippingSettings())
-const expressShippingFee = computed(() => shippingSettings.defaultShippingFee * 2.5) // 快递费为标准运费的2.5倍
+const shippingSettings = reactive({
+  defaultShippingFee: 15,
+  estimatedDelivery: '7-15个工作日',
+})
+const expressShippingFee = computed(() => shippingSettings.defaultShippingFee * 2.5)
+
+onMounted(async () => {
+  try {
+    const settings = await settingsApi.get()
+    if (settings.defaultShippingFee) shippingSettings.defaultShippingFee = settings.defaultShippingFee
+    if (settings.estimatedDelivery) shippingSettings.estimatedDelivery = settings.estimatedDelivery
+  } catch (e) {
+    // 使用默认值
+  }
+})
 
 const form = reactive({
   name: '',

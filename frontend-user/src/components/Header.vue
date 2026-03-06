@@ -229,12 +229,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useCartStore } from '@/stores/cart'
 import toast from '@/utils/toast'
-import { getGeneralSettings } from '@/utils/settings'
+import { settingsApi } from '@/utils/api'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -245,10 +245,17 @@ const showDropdown = ref(false)
 const showMobileMenu = ref(false)
 const showMobileSearch = ref(false)
 
-// 从设置获取商城名称
-const siteName = computed(() => {
-  const settings = getGeneralSettings()
-  return settings.siteName || '跨境电商'
+// 从 WordPress API 获取商城名称
+const siteNameValue = ref('跨境电商')
+const siteName = computed(() => siteNameValue.value)
+
+onMounted(async () => {
+  try {
+    const settings = await settingsApi.get()
+    if (settings.siteName) siteNameValue.value = settings.siteName
+  } catch (e) {
+    // 使用默认值
+  }
 })
 
 const handleSearch = () => {

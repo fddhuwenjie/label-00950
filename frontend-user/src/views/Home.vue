@@ -233,53 +233,55 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import ProductCard from '@/components/ProductCard.vue'
-import { getGeneralSettings } from '@/utils/settings'
-import { loadProducts } from '@/utils/productStorage'
+import { productApi, settingsApi, categoryApi } from '@/utils/api'
 
-const siteSettings = reactive(getGeneralSettings())
-
-// 从 API 加载商品
-const allProducts = ref([])
-
-onMounted(async () => {
-  allProducts.value = await loadProducts()
+const siteSettings = reactive({
+  siteDescription: '汇聚全球顶级品牌，为您精选来自世界各地的优质好物',
 })
 
-// 分类信息 - 动态计算数量
+const allProducts = ref([])
+const apiCategories = ref([])
+
+onMounted(async () => {
+  try {
+    const [products, settings, cats] = await Promise.all([
+      productApi.getAll().catch(() => []),
+      settingsApi.get().catch(() => ({})),
+      categoryApi.getAll().catch(() => []),
+    ])
+    allProducts.value = products
+    if (settings.siteDescription) siteSettings.siteDescription = settings.siteDescription
+    apiCategories.value = cats
+  } catch (e) {
+    console.error('加载数据失败:', e)
+  }
+})
+
+// 分类信息
 const categories = computed(() => {
-  const getCategoryCount = (slug) => {
-    return allProducts.value.filter(p => p.category === slug).length
+  const catImages = {
+    'electronics': 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=400&h=300&fit=crop',
+    'fashion': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=300&fit=crop',
+    'beauty': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=300&fit=crop',
+    'home': 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop',
   }
   
+  if (apiCategories.value.length > 0) {
+    return apiCategories.value.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      count: cat.count,
+      image: catImages[cat.slug] || catImages['electronics'],
+    }))
+  }
+  
+  // fallback
   return [
-    { 
-      id: 1, 
-      name: '数码电子', 
-      slug: 'electronics', 
-      count: getCategoryCount('electronics'),
-      image: 'https://images.unsplash.com/photo-1606220588913-b3aacb4d2f46?w=400&h=300&fit=crop'
-    },
-    { 
-      id: 2, 
-      name: '时尚服饰', 
-      slug: 'fashion', 
-      count: getCategoryCount('fashion'),
-      image: 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=400&h=300&fit=crop'
-    },
-    { 
-      id: 3, 
-      name: '美妆护肤', 
-      slug: 'beauty', 
-      count: getCategoryCount('beauty'),
-      image: 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=300&fit=crop'
-    },
-    { 
-      id: 4, 
-      name: '家居生活', 
-      slug: 'home', 
-      count: getCategoryCount('home'),
-      image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=300&fit=crop'
-    },
+    { id: 1, name: '数码电子', slug: 'electronics', count: 0, image: catImages['electronics'] },
+    { id: 2, name: '时尚服饰', slug: 'fashion', count: 0, image: catImages['fashion'] },
+    { id: 3, name: '美妆护肤', slug: 'beauty', count: 0, image: catImages['beauty'] },
+    { id: 4, name: '家居生活', slug: 'home', count: 0, image: catImages['home'] },
   ]
 })
 

@@ -2,469 +2,710 @@
 /**
  * Plugin Name: 跨境电商增强
  * Plugin URI: https://example.com/cross-border-commerce
- * Description: 为 WooCommerce 添加跨境电商功能，包括多货币、国际物流、关税计算等
+ * Description: 为 WooCommerce 添加跨境电商功能，包括多货币、国际物流、关税计算，并提供前端 REST API
  * Version: 1.0.0
  * Author: Cross Border Team
- * Author URI: https://example.com
  * Text Domain: cross-border-commerce
- * Domain Path: /languages
  * Requires at least: 6.0
  * Requires PHP: 8.0
  * WC requires at least: 8.0
- * WC tested up to: 8.5
  */
 
-if (!defined('ABSPATH')) {
-    exit;
-}
+if (!defined('ABSPATH')) exit;
 
-// 定义插件常量
 define('CBC_VERSION', '1.0.0');
 define('CBC_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('CBC_PLUGIN_URL', plugin_dir_url(__FILE__));
 
-/**
- * 主插件类
- */
 class Cross_Border_Commerce {
-    
     private static $instance = null;
-    
+
     public static function get_instance() {
         if (null === self::$instance) {
             self::$instance = new self();
         }
         return self::$instance;
     }
-    
+
     private function __construct() {
-        add_action('plugins_loaded', array($this, 'init'));
-        add_action('rest_api_init', array($this, 'register_rest_routes'));
-        add_action('init', array($this, 'load_textdomain'));
-        
-        // CORS 支持
-        add_action('rest_api_init', array($this, 'add_cors_support'), 15);
-    }
-    
-    public function init() {
-        // 检查 WooCommerce 是否激活
-        if (!class_exists('WooCommerce')) {
-            add_action('admin_notices', array($this, 'woocommerce_missing_notice'));
-            return;
-        }
-        
-        // 加载功能模块
-        $this->load_modules();
-    }
-    
-    public function load_textdomain() {
-        load_plugin_textdomain('cross-border-commerce', false, dirname(plugin_basename(__FILE__)) . '/languages');
-    }
-    
-    public function woocommerce_missing_notice() {
-        ?>
-        <div class="error">
-            <p><?php _e('跨境电商增强插件需要 WooCommerce 才能运行。', 'cross-border-commerce'); ?></p>
-        </div>
-        <?php
-    }
-    
-    private function load_modules() {
-        // 加载货币转换模块
-        require_once CBC_PLUGIN_DIR . 'includes/class-currency-converter.php';
-        
-        // 加载物流计算模块
-        require_once CBC_PLUGIN_DIR . 'includes/class-shipping-calculator.php';
-        
-        // 加载关税计算模块
-        require_once CBC_PLUGIN_DIR . 'includes/class-duty-calculator.php';
-    }
-    
-    public function add_cors_support() {
-        remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
-        add_filter('rest_pre_serve_request', function($value) {
-            $origin = get_http_origin();
-            
-            // 允许的来源列表（生产环境应配置具体域名）
-            $allowed_origins = array(
-                'http://localhost:9081',
-                'http://localhost:9082',
-                'http://localhost:5173',
-                'http://localhost:5174',
-            );
-            
-            if (in_array($origin, $allowed_origins)) {
-                header('Access-Control-Allow-Origin: ' . $origin);
-                header('Access-Control-Allow-Credentials: true');
-            } else {
-                // 开发环境：允许所有来源但不允许凭证
+        $this->includes();
+        add_action('rest_api_init', array($this, 'register_routes'));
+        // 允许 CORS
+        add_action('rest_api_init', function() {
+            remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
+            add_filter('rest_pre_serve_request', function($value) {
                 header('Access-Control-Allow-Origin: *');
-            }
-            
-            header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-            header('Access-Control-Allow-Headers: Authorization, Content-Type, X-Requested-With, X-CSRF-Token');
-            
-            return $value;
-        });
+                header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+                header('Access-Control-Allow-Headers: Content-Type, Authorization');
+                header('Access-Control-Allow-Credentials: true');
+                return $value;
+            });
+        }, 15);
     }
-    
-    public function register_rest_routes() {
-        // 商品相关 API
-        register_rest_route('cbc/v1', '/products', array(
+
+    private function includes() {
+        require_once CBC_PLUGIN_DIR . 'includes/class-currency-converter.php';
+        require_once CBC_PLUGIN_DIR . 'includes/class-duty-calculator.php';
+        require_once CBC_PLUGIN_DIR . 'includes/class-shipping-calculator.php';
+    }
+
+    public function register_routes() {
+        $namespace = 'cbc/v1';
+
+        // ===== 商品 API（公开，使用 WooCommerce 数据） =====
+        register_rest_route($namespace, '/products', array(
             'methods' => 'GET',
             'callback' => array($this, 'get_products'),
             'permission_callback' => '__return_true',
         ));
-        
-        register_rest_route('cbc/v1', '/products/(?P<id>\d+)', array(
+
+        register_rest_route($namespace, '/products/(?P<id>\d+)', array(
             'methods' => 'GET',
             'callback' => array($this, 'get_product'),
             'permission_callback' => '__return_true',
         ));
-        
-        // 分类相关 API
-        register_rest_route('cbc/v1', '/categories', array(
+
+        // 商品管理（需要认证）
+        register_rest_route($namespace, '/products', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'create_product'),
+            'permission_callback' => array($this, 'check_admin_permission'),
+        ));
+
+        register_rest_route($namespace, '/products/(?P<id>\d+)', array(
+            'methods' => 'PUT',
+            'callback' => array($this, 'update_product'),
+            'permission_callback' => array($this, 'check_admin_permission'),
+        ));
+
+        register_rest_route($namespace, '/products/(?P<id>\d+)', array(
+            'methods' => 'DELETE',
+            'callback' => array($this, 'delete_product'),
+            'permission_callback' => array($this, 'check_admin_permission'),
+        ));
+
+        // ===== 分类 API =====
+        register_rest_route($namespace, '/categories', array(
             'methods' => 'GET',
             'callback' => array($this, 'get_categories'),
             'permission_callback' => '__return_true',
         ));
-        
-        // 订单相关 API
-        register_rest_route('cbc/v1', '/orders', array(
-            'methods' => array('GET', 'POST'),
-            'callback' => array($this, 'handle_orders'),
-            'permission_callback' => array($this, 'check_auth'),
+
+        // ===== 用户认证 API =====
+        register_rest_route($namespace, '/auth/login', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'user_login'),
+            'permission_callback' => '__return_true',
         ));
-        
-        // 货币转换 API
-        register_rest_route('cbc/v1', '/currency/convert', array(
+
+        register_rest_route($namespace, '/auth/register', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'user_register'),
+            'permission_callback' => '__return_true',
+        ));
+
+        register_rest_route($namespace, '/auth/me', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_current_user_info'),
+            'permission_callback' => array($this, 'check_user_permission'),
+        ));
+
+        // ===== 订单 API =====
+        register_rest_route($namespace, '/orders', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_orders'),
+            'permission_callback' => array($this, 'check_user_permission'),
+        ));
+
+        register_rest_route($namespace, '/orders', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'create_order'),
+            'permission_callback' => array($this, 'check_user_permission'),
+        ));
+
+        // ===== 跨境电商功能 API =====
+        register_rest_route($namespace, '/currency/convert', array(
             'methods' => 'GET',
             'callback' => array($this, 'convert_currency'),
             'permission_callback' => '__return_true',
         ));
-        
-        // 运费计算 API
-        register_rest_route('cbc/v1', '/shipping/calculate', array(
+
+        register_rest_route($namespace, '/shipping/calculate', array(
             'methods' => 'POST',
             'callback' => array($this, 'calculate_shipping'),
             'permission_callback' => '__return_true',
         ));
-        
-        // 统计数据 API（管理后台使用）
-        register_rest_route('cbc/v1', '/stats/dashboard', array(
+
+        register_rest_route($namespace, '/duty/calculate', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'calculate_duty'),
+            'permission_callback' => '__return_true',
+        ));
+
+        // ===== 站点设置 API =====
+        register_rest_route($namespace, '/settings', array(
             'methods' => 'GET',
-            'callback' => array($this, 'get_dashboard_stats'),
-            'permission_callback' => array($this, 'check_admin_auth'),
+            'callback' => array($this, 'get_settings'),
+            'permission_callback' => '__return_true',
+        ));
+
+        register_rest_route($namespace, '/settings', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'update_settings'),
+            'permission_callback' => array($this, 'check_admin_permission'),
+        ));
+
+        // ===== 仪表盘 API =====
+        register_rest_route($namespace, '/dashboard', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_dashboard'),
+            'permission_callback' => array($this, 'check_admin_permission'),
         ));
     }
-    
-    public function check_auth($request) {
-        return is_user_logged_in();
+
+    // ===== 权限检查 =====
+    public function check_admin_permission($request) {
+        $user = $this->get_user_from_token($request);
+        if (!$user) return new WP_Error('unauthorized', '未授权', array('status' => 401));
+        return user_can($user, 'manage_options');
     }
-    
-    public function check_admin_auth($request) {
-        return current_user_can('manage_woocommerce');
+
+    public function check_user_permission($request) {
+        $user = $this->get_user_from_token($request);
+        return $user ? true : new WP_Error('unauthorized', '未授权', array('status' => 401));
     }
-    
+
+    private function get_user_from_token($request) {
+        $auth = $request->get_header('Authorization');
+        if (!$auth) return null;
+        $token = str_replace('Bearer ', '', $auth);
+        if (empty($token)) return null;
+
+        // 解析简单 token（格式: base64(user_id:timestamp:hash)）
+        $decoded = base64_decode($token);
+        if (!$decoded) return null;
+        $parts = explode(':', $decoded);
+        if (count($parts) < 3) return null;
+
+        $user_id = intval($parts[0]);
+        $timestamp = intval($parts[1]);
+        $hash = $parts[2];
+
+        // 验证 token 有效期（7天）
+        if (time() - $timestamp > 7 * 86400) return null;
+
+        // 验证 hash
+        $secret = defined('JWT_AUTH_SECRET_KEY') ? JWT_AUTH_SECRET_KEY : 'default-secret';
+        $expected_hash = hash_hmac('sha256', $user_id . ':' . $timestamp, $secret);
+        if (!hash_equals($expected_hash, $hash)) return null;
+
+        $user = get_user_by('ID', $user_id);
+        return $user ?: null;
+    }
+
+    private function generate_token($user_id) {
+        $timestamp = time();
+        $secret = defined('JWT_AUTH_SECRET_KEY') ? JWT_AUTH_SECRET_KEY : 'default-secret';
+        $hash = hash_hmac('sha256', $user_id . ':' . $timestamp, $secret);
+        return base64_encode($user_id . ':' . $timestamp . ':' . $hash);
+    }
+
+    // ===== 用户认证 =====
+    public function user_login($request) {
+        $params = $request->get_json_params();
+        $username = sanitize_text_field($params['username'] ?? '');
+        $password = $params['password'] ?? '';
+
+        if (empty($username) || empty($password)) {
+            return new WP_Error('missing_fields', '用户名和密码不能为空', array('status' => 400));
+        }
+
+        $user = wp_authenticate($username, $password);
+        if (is_wp_error($user)) {
+            return new WP_Error('invalid_credentials', '用户名或密码错误', array('status' => 401));
+        }
+
+        $token = $this->generate_token($user->ID);
+
+        return rest_ensure_response(array(
+            'token' => $token,
+            'user' => array(
+                'id' => $user->ID,
+                'name' => $user->display_name,
+                'email' => $user->user_email,
+                'role' => implode(',', $user->roles),
+            ),
+        ));
+    }
+
+    public function user_register($request) {
+        $params = $request->get_json_params();
+        $username = sanitize_text_field($params['username'] ?? '');
+        $email = sanitize_email($params['email'] ?? '');
+        $password = $params['password'] ?? '';
+        $name = sanitize_text_field($params['name'] ?? $username);
+
+        if (empty($username) || empty($email) || empty($password)) {
+            return new WP_Error('missing_fields', '所有字段都是必填的', array('status' => 400));
+        }
+
+        if (username_exists($username)) {
+            return new WP_Error('username_exists', '用户名已存在', array('status' => 409));
+        }
+
+        if (email_exists($email)) {
+            return new WP_Error('email_exists', '邮箱已被注册', array('status' => 409));
+        }
+
+        $user_id = wp_create_user($username, $password, $email);
+        if (is_wp_error($user_id)) {
+            return new WP_Error('registration_failed', '注册失败', array('status' => 500));
+        }
+
+        wp_update_user(array('ID' => $user_id, 'display_name' => $name));
+        $user = get_user_by('ID', $user_id);
+        $user->set_role('customer');
+
+        $token = $this->generate_token($user_id);
+
+        return rest_ensure_response(array(
+            'token' => $token,
+            'user' => array(
+                'id' => $user_id,
+                'name' => $name,
+                'email' => $email,
+                'role' => 'customer',
+            ),
+        ));
+    }
+
+    public function get_current_user_info($request) {
+        $user = $this->get_user_from_token($request);
+        if (!$user) return new WP_Error('unauthorized', '未授权', array('status' => 401));
+
+        return rest_ensure_response(array(
+            'id' => $user->ID,
+            'name' => $user->display_name,
+            'email' => $user->user_email,
+            'role' => implode(',', $user->roles),
+        ));
+    }
+
+    // ===== 商品 API（使用 WooCommerce 数据） =====
     public function get_products($request) {
+        $per_page = intval($request->get_param('per_page') ?: 50);
+        $page = intval($request->get_param('page') ?: 1);
+        $category = $request->get_param('category');
+        $search = $request->get_param('search');
+
         $args = array(
             'status' => 'publish',
-            'limit' => $request->get_param('per_page') ?: 10,
-            'page' => $request->get_param('page') ?: 1,
-            'category' => $request->get_param('category') ?: '',
-            'orderby' => $request->get_param('orderby') ?: 'date',
-            'order' => $request->get_param('order') ?: 'DESC',
+            'limit' => $per_page,
+            'page' => $page,
+            'orderby' => 'date',
+            'order' => 'DESC',
         );
-        
+
+        if ($category) {
+            $args['category'] = array($category);
+        }
+
+        if ($search) {
+            $args['s'] = $search;
+        }
+
         $products = wc_get_products($args);
         $data = array();
-        
+
         foreach ($products as $product) {
             $data[] = $this->format_product($product);
         }
-        
-        return new WP_REST_Response($data, 200);
+
+        return rest_ensure_response($data);
     }
-    
+
     public function get_product($request) {
-        $product = wc_get_product($request['id']);
-        
+        $id = intval($request['id']);
+        $product = wc_get_product($id);
+
         if (!$product) {
-            return new WP_Error('not_found', __('商品未找到', 'cross-border-commerce'), array('status' => 404));
+            return new WP_Error('not_found', '商品不存在', array('status' => 404));
         }
-        
-        return new WP_REST_Response($this->format_product($product), 200);
+
+        return rest_ensure_response($this->format_product($product));
     }
-    
+
+    public function create_product($request) {
+        $params = $request->get_json_params();
+
+        $product = new WC_Product_Simple();
+        $product->set_name(sanitize_text_field($params['name'] ?? ''));
+        $product->set_sku(sanitize_text_field($params['sku'] ?? ''));
+        $product->set_regular_price($params['price'] ?? 0);
+        if (!empty($params['salePrice'])) {
+            $product->set_sale_price($params['salePrice']);
+        }
+        $product->set_stock_quantity(intval($params['stock'] ?? 0));
+        $product->set_manage_stock(true);
+        $product->set_description(sanitize_textarea_field($params['description'] ?? ''));
+        $product->set_short_description(sanitize_textarea_field($params['description'] ?? ''));
+
+        // 设置分类
+        if (!empty($params['category'])) {
+            $term = get_term_by('name', $params['category'], 'product_cat');
+            if ($term) {
+                $product->set_category_ids(array($term->term_id));
+            }
+        }
+
+        // 设置图片
+        if (!empty($params['image'])) {
+            // 存储外部图片 URL 到 meta
+            $product->update_meta_data('_external_image', $params['image']);
+        }
+        if (!empty($params['images'])) {
+            $product->update_meta_data('_external_images', $params['images']);
+        }
+
+        $product->set_status('publish');
+        $id = $product->save();
+
+        return rest_ensure_response($this->format_product(wc_get_product($id)));
+    }
+
+    public function update_product($request) {
+        $id = intval($request['id']);
+        $product = wc_get_product($id);
+        if (!$product) {
+            return new WP_Error('not_found', '商品不存在', array('status' => 404));
+        }
+
+        $params = $request->get_json_params();
+
+        if (isset($params['name'])) $product->set_name(sanitize_text_field($params['name']));
+        if (isset($params['sku'])) $product->set_sku(sanitize_text_field($params['sku']));
+        if (isset($params['price'])) $product->set_regular_price($params['price']);
+        if (isset($params['salePrice'])) $product->set_sale_price($params['salePrice']);
+        if (isset($params['stock'])) $product->set_stock_quantity(intval($params['stock']));
+        if (isset($params['description'])) {
+            $product->set_description(sanitize_textarea_field($params['description']));
+            $product->set_short_description(sanitize_textarea_field($params['description']));
+        }
+
+        if (!empty($params['category'])) {
+            $term = get_term_by('name', $params['category'], 'product_cat');
+            if ($term) {
+                $product->set_category_ids(array($term->term_id));
+            }
+        }
+
+        if (!empty($params['image'])) {
+            $product->update_meta_data('_external_image', $params['image']);
+        }
+        if (!empty($params['images'])) {
+            $product->update_meta_data('_external_images', $params['images']);
+        }
+
+        $product->save();
+
+        return rest_ensure_response($this->format_product($product));
+    }
+
+    public function delete_product($request) {
+        $id = intval($request['id']);
+        $product = wc_get_product($id);
+        if (!$product) {
+            return new WP_Error('not_found', '商品不存在', array('status' => 404));
+        }
+
+        $product->delete(true);
+        return rest_ensure_response(array('deleted' => true, 'id' => $id));
+    }
+
     private function format_product($product) {
+        $categories = wp_get_post_terms($product->get_id(), 'product_cat', array('fields' => 'names'));
+        $category = !empty($categories) ? $categories[0] : '';
+
+        // 获取图片
+        $image = $product->get_meta('_external_image');
+        $images = $product->get_meta('_external_images');
+
+        // 如果没有外部图片，尝试获取 WooCommerce 图片
+        if (empty($image)) {
+            $image_id = $product->get_image_id();
+            $image = $image_id ? wp_get_attachment_url($image_id) : '';
+        }
+        if (empty($images)) {
+            $gallery_ids = $product->get_gallery_image_ids();
+            $images = array_map('wp_get_attachment_url', $gallery_ids);
+        }
+
         return array(
             'id' => $product->get_id(),
             'name' => $product->get_name(),
-            'slug' => $product->get_slug(),
+            'sku' => $product->get_sku(),
+            'price' => floatval($product->get_regular_price()),
+            'salePrice' => $product->get_sale_price() ? floatval($product->get_sale_price()) : null,
+            'stock' => $product->get_stock_quantity(),
+            'category' => $category,
+            'image' => $image ?: '',
+            'images' => is_array($images) ? $images : array(),
             'description' => $product->get_description(),
-            'short_description' => $product->get_short_description(),
-            'price' => $product->get_price(),
-            'regular_price' => $product->get_regular_price(),
-            'sale_price' => $product->get_sale_price(),
-            'currency' => get_woocommerce_currency(),
-            'stock_status' => $product->get_stock_status(),
-            'stock_quantity' => $product->get_stock_quantity(),
-            'images' => $this->get_product_images($product),
-            'categories' => $this->get_product_categories($product),
-            'attributes' => $product->get_attributes(),
-            'created_at' => $product->get_date_created() ? $product->get_date_created()->format('Y-m-d H:i:s') : null,
+            'status' => $product->get_status(),
         );
     }
-    
-    private function get_product_images($product) {
-        $images = array();
-        $attachment_ids = $product->get_gallery_image_ids();
-        
-        // 添加主图
-        if ($product->get_image_id()) {
-            array_unshift($attachment_ids, $product->get_image_id());
-        }
-        
-        foreach ($attachment_ids as $attachment_id) {
-            $images[] = array(
-                'id' => $attachment_id,
-                'src' => wp_get_attachment_url($attachment_id),
-                'thumbnail' => wp_get_attachment_image_url($attachment_id, 'thumbnail'),
-            );
-        }
-        
-        return $images;
-    }
-    
-    private function get_product_categories($product) {
-        $categories = array();
-        $term_ids = $product->get_category_ids();
-        
-        foreach ($term_ids as $term_id) {
-            $term = get_term($term_id, 'product_cat');
-            if ($term && !is_wp_error($term)) {
-                $categories[] = array(
-                    'id' => $term->term_id,
-                    'name' => $term->name,
-                    'slug' => $term->slug,
-                );
-            }
-        }
-        
-        return $categories;
-    }
-    
+
+    // ===== 分类 =====
     public function get_categories($request) {
-        $args = array(
+        $terms = get_terms(array(
             'taxonomy' => 'product_cat',
-            'hide_empty' => $request->get_param('hide_empty') !== 'false',
-            'orderby' => 'name',
-            'order' => 'ASC',
-        );
-        
-        $terms = get_terms($args);
+            'hide_empty' => false,
+        ));
+
         $data = array();
-        
         foreach ($terms as $term) {
+            if ($term->slug === 'uncategorized') continue;
             $data[] = array(
                 'id' => $term->term_id,
                 'name' => $term->name,
                 'slug' => $term->slug,
-                'description' => $term->description,
                 'count' => $term->count,
-                'parent' => $term->parent,
             );
         }
-        
-        return new WP_REST_Response($data, 200);
+
+        return rest_ensure_response($data);
     }
-    
-    public function handle_orders($request) {
-        if ($request->get_method() === 'GET') {
-            return $this->get_orders($request);
-        }
-        return $this->create_order($request);
-    }
-    
-    private function get_orders($request) {
-        $user_id = get_current_user_id();
-        
+
+    // ===== 订单 =====
+    public function get_orders($request) {
+        $user = $this->get_user_from_token($request);
+        $is_admin = user_can($user, 'manage_options');
+
         $args = array(
-            'customer' => $user_id,
-            'limit' => $request->get_param('per_page') ?: 10,
-            'page' => $request->get_param('page') ?: 1,
+            'limit' => intval($request->get_param('per_page') ?: 20),
+            'page' => intval($request->get_param('page') ?: 1),
             'orderby' => 'date',
             'order' => 'DESC',
         );
-        
+
+        if (!$is_admin) {
+            $args['customer_id'] = $user->ID;
+        }
+
         $orders = wc_get_orders($args);
         $data = array();
-        
+
         foreach ($orders as $order) {
-            $data[] = $this->format_order($order);
+            $items = array();
+            foreach ($order->get_items() as $item) {
+                $product = $item->get_product();
+                $image = '';
+                if ($product) {
+                    $image = $product->get_meta('_external_image');
+                    if (empty($image)) {
+                        $image_id = $product->get_image_id();
+                        $image = $image_id ? wp_get_attachment_url($image_id) : '';
+                    }
+                }
+                $items[] = array(
+                    'id' => $item->get_id(),
+                    'name' => $item->get_name(),
+                    'quantity' => $item->get_quantity(),
+                    'price' => floatval($item->get_total()),
+                    'image' => $image,
+                );
+            }
+
+            $data[] = array(
+                'id' => $order->get_id(),
+                'number' => $order->get_order_number(),
+                'status' => $order->get_status(),
+                'total' => floatval($order->get_total()),
+                'date' => $order->get_date_created()->format('Y-m-d H:i:s'),
+                'items' => $items,
+                'billing' => array(
+                    'name' => $order->get_billing_first_name() . ' ' . $order->get_billing_last_name(),
+                    'email' => $order->get_billing_email(),
+                    'phone' => $order->get_billing_phone(),
+                    'address' => $order->get_billing_address_1(),
+                ),
+            );
         }
-        
-        return new WP_REST_Response($data, 200);
+
+        return rest_ensure_response($data);
     }
-    
-    private function create_order($request) {
+
+    public function create_order($request) {
+        $user = $this->get_user_from_token($request);
         $params = $request->get_json_params();
-        
-        $order = wc_create_order(array(
-            'customer_id' => get_current_user_id(),
-        ));
-        
-        if (is_wp_error($order)) {
-            return $order;
-        }
-        
+
+        $order = wc_create_order(array('customer_id' => $user->ID));
+
         // 添加商品
         if (!empty($params['items'])) {
             foreach ($params['items'] as $item) {
-                $product = wc_get_product($item['product_id']);
+                $product = wc_get_product(intval($item['id']));
                 if ($product) {
-                    $order->add_product($product, $item['quantity'] ?? 1);
+                    $order->add_product($product, intval($item['quantity'] ?? 1));
                 }
             }
         }
-        
-        // 设置地址
+
+        // 设置账单信息
         if (!empty($params['billing'])) {
-            $order->set_address($params['billing'], 'billing');
+            $b = $params['billing'];
+            $order->set_billing_first_name(sanitize_text_field($b['firstName'] ?? ''));
+            $order->set_billing_last_name(sanitize_text_field($b['lastName'] ?? ''));
+            $order->set_billing_email(sanitize_email($b['email'] ?? $user->user_email));
+            $order->set_billing_phone(sanitize_text_field($b['phone'] ?? ''));
+            $order->set_billing_address_1(sanitize_text_field($b['address'] ?? ''));
+            $order->set_billing_city(sanitize_text_field($b['city'] ?? ''));
+            $order->set_billing_state(sanitize_text_field($b['state'] ?? ''));
+            $order->set_billing_postcode(sanitize_text_field($b['postcode'] ?? ''));
+            $order->set_billing_country(sanitize_text_field($b['country'] ?? 'CN'));
         }
-        if (!empty($params['shipping'])) {
-            $order->set_address($params['shipping'], 'shipping');
+
+        // 设置运费
+        if (!empty($params['shipping_fee'])) {
+            $shipping = new WC_Order_Item_Shipping();
+            $shipping->set_method_title('国际物流');
+            $shipping->set_total($params['shipping_fee']);
+            $order->add_item($shipping);
         }
-        
+
         $order->calculate_totals();
+        $order->set_status('processing');
         $order->save();
-        
-        return new WP_REST_Response($this->format_order($order), 201);
-    }
-    
-    private function format_order($order) {
-        return array(
+
+        return rest_ensure_response(array(
             'id' => $order->get_id(),
             'number' => $order->get_order_number(),
+            'total' => floatval($order->get_total()),
             'status' => $order->get_status(),
-            'total' => $order->get_total(),
-            'currency' => $order->get_currency(),
-            'items' => $this->get_order_items($order),
-            'billing' => $order->get_address('billing'),
-            'shipping' => $order->get_address('shipping'),
-            'created_at' => $order->get_date_created() ? $order->get_date_created()->format('Y-m-d H:i:s') : null,
-        );
+        ));
     }
-    
-    private function get_order_items($order) {
-        $items = array();
-        
-        foreach ($order->get_items() as $item) {
-            $items[] = array(
-                'id' => $item->get_id(),
-                'product_id' => $item->get_product_id(),
-                'name' => $item->get_name(),
-                'quantity' => $item->get_quantity(),
-                'total' => $item->get_total(),
-            );
-        }
-        
-        return $items;
-    }
-    
+
+    // ===== 跨境电商功能 =====
     public function convert_currency($request) {
-        $from = $request->get_param('from') ?: 'USD';
-        $to = $request->get_param('to') ?: 'CNY';
-        $amount = floatval($request->get_param('amount') ?: 1);
-        
-        // 示例汇率数据（简化实现，生产环境应对接实时汇率 API 如 Open Exchange Rates）
-        $rates = array(
-            'USD' => 1,
-            'CNY' => 7.2,
-            'EUR' => 0.92,
-            'GBP' => 0.79,
-            'JPY' => 149.5,
-        );
-        
-        if (!isset($rates[$from]) || !isset($rates[$to])) {
-            return new WP_Error('invalid_currency', __('不支持的货币类型', 'cross-border-commerce'), array('status' => 400));
-        }
-        
-        $converted = $amount / $rates[$from] * $rates[$to];
-        
-        return new WP_REST_Response(array(
+        $amount = floatval($request->get_param('amount') ?: 0);
+        $from = strtoupper($request->get_param('from') ?: 'USD');
+        $to = strtoupper($request->get_param('to') ?: 'CNY');
+
+        $converter = CBC_Currency_Converter::get_instance();
+        $result = $converter->convert($amount, $from, $to);
+
+        return rest_ensure_response(array(
             'from' => $from,
             'to' => $to,
             'amount' => $amount,
-            'converted' => round($converted, 2),
-            'rate' => round($rates[$to] / $rates[$from], 4),
-        ), 200);
+            'converted' => round($result, 2),
+            'rate' => $converter->get_rate($from, $to),
+            'formatted' => $converter->format($result, $to),
+        ));
     }
-    
+
     public function calculate_shipping($request) {
         $params = $request->get_json_params();
-        
-        $country = $params['country'] ?? 'CN';
+        $country = sanitize_text_field($params['country'] ?? 'CN');
         $weight = floatval($params['weight'] ?? 1);
-        
-        // 示例运费计算（简化实现，生产环境应对接物流服务商 API）
-        $base_rates = array(
-            'CN' => 0,
-            'US' => 15,
-            'UK' => 18,
-            'DE' => 16,
-            'JP' => 12,
-            'AU' => 20,
-        );
-        
-        $base = $base_rates[$country] ?? 25;
-        $shipping_cost = $base + ($weight * 2);
-        
-        return new WP_REST_Response(array(
+        $method = sanitize_text_field($params['method'] ?? 'standard');
+
+        $calculator = CBC_Shipping_Calculator::get_instance();
+        $cost = $calculator->calculate($country, $weight, $method);
+
+        return rest_ensure_response(array(
             'country' => $country,
             'weight' => $weight,
-            'cost' => round($shipping_cost, 2),
+            'method' => $method,
+            'cost' => round($cost, 2),
             'currency' => 'USD',
-            'estimated_days' => $country === 'CN' ? '3-5' : '7-14',
-        ), 200);
+            'estimated_days' => $calculator->get_estimated_days($country, $method),
+        ));
     }
-    
-    public function get_dashboard_stats($request) {
-        global $wpdb;
-        
-        // 获取今日订单数
-        $today_orders = wc_get_orders(array(
-            'date_created' => '>' . date('Y-m-d 00:00:00'),
-            'return' => 'ids',
+
+    public function calculate_duty($request) {
+        $params = $request->get_json_params();
+        $country = sanitize_text_field($params['country'] ?? 'CN');
+        $amount = floatval($params['amount'] ?? 0);
+        $category = sanitize_text_field($params['category'] ?? 'default');
+
+        $calculator = CBC_Duty_Calculator::get_instance();
+        $duty = $calculator->calculate($country, $amount, $category);
+
+        return rest_ensure_response(array(
+            'country' => $country,
+            'amount' => $amount,
+            'category' => $category,
+            'duty' => round($duty, 2),
+            'rate' => $calculator->get_rate($country, $category),
+            'total' => round($amount + $duty, 2),
         ));
-        
-        // 获取本月销售额
-        $month_start = date('Y-m-01 00:00:00');
-        $month_orders = wc_get_orders(array(
-            'date_created' => '>' . $month_start,
-            'status' => array('completed', 'processing'),
-        ));
-        
-        $month_revenue = 0;
-        foreach ($month_orders as $order) {
-            $month_revenue += $order->get_total();
-        }
-        
-        // 获取商品总数
-        $products_count = wp_count_posts('product')->publish;
-        
-        // 获取用户总数
-        $users_count = count_users()['total_users'];
-        
-        return new WP_REST_Response(array(
-            'today_orders' => count($today_orders),
-            'month_revenue' => round($month_revenue, 2),
-            'products_count' => $products_count,
-            'users_count' => $users_count,
+    }
+
+    // ===== 站点设置 =====
+    public function get_settings($request) {
+        return rest_ensure_response(array(
+            'siteName' => get_bloginfo('name'),
+            'siteDescription' => get_bloginfo('description'),
             'currency' => get_woocommerce_currency(),
-        ), 200);
+            'currencySymbol' => get_woocommerce_currency_symbol(),
+            'contactEmail' => get_option('cbc_contact_email', get_option('admin_email')),
+            'contactPhone' => get_option('cbc_contact_phone', '+86 400-888-8888'),
+            'address' => get_option('cbc_address', ''),
+            'defaultShippingFee' => floatval(get_option('cbc_default_shipping_fee', 15)),
+            'estimatedDelivery' => get_option('cbc_estimated_delivery', '7-15个工作日'),
+        ));
+    }
+
+    public function update_settings($request) {
+        $params = $request->get_json_params();
+
+        if (isset($params['siteName'])) {
+            update_option('blogname', sanitize_text_field($params['siteName']));
+        }
+        if (isset($params['siteDescription'])) {
+            update_option('blogdescription', sanitize_text_field($params['siteDescription']));
+        }
+        if (isset($params['contactEmail'])) {
+            update_option('cbc_contact_email', sanitize_email($params['contactEmail']));
+        }
+        if (isset($params['contactPhone'])) {
+            update_option('cbc_contact_phone', sanitize_text_field($params['contactPhone']));
+        }
+        if (isset($params['address'])) {
+            update_option('cbc_address', sanitize_text_field($params['address']));
+        }
+        if (isset($params['defaultShippingFee'])) {
+            update_option('cbc_default_shipping_fee', floatval($params['defaultShippingFee']));
+        }
+        if (isset($params['estimatedDelivery'])) {
+            update_option('cbc_estimated_delivery', sanitize_text_field($params['estimatedDelivery']));
+        }
+
+        return $this->get_settings($request);
+    }
+
+    // ===== 仪表盘 =====
+    public function get_dashboard($request) {
+        $orders_count = 0;
+        $revenue = 0;
+        $orders = wc_get_orders(array('limit' => -1, 'status' => array('processing', 'completed')));
+        foreach ($orders as $order) {
+            $orders_count++;
+            $revenue += floatval($order->get_total());
+        }
+
+        $products_count = wp_count_posts('product');
+        $users_count = count_users();
+
+        return rest_ensure_response(array(
+            'orders_count' => $orders_count,
+            'revenue' => round($revenue, 2),
+            'products_count' => $products_count->publish ?? 0,
+            'users_count' => $users_count['total_users'] ?? 0,
+            'currency' => get_woocommerce_currency(),
+        ));
     }
 }
 
-// 初始化插件
+// 初始化
 Cross_Border_Commerce::get_instance();

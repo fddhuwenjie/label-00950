@@ -173,31 +173,13 @@ const handleLogin = async () => {
   loading.value = true
   
   try {
-    // 模拟登录验证
-    await new Promise(resolve => setTimeout(resolve, 800))
+    const result = await userStore.login(formData.username, formData.password)
     
-    // 验证账号（实际应调用后端 API 验证）
-    // 此处为演示，接受 admin 用户名配合任意非空密码
-    if (formData.username === 'admin' && formData.password) {
-      // 保存登录状态
-      const token = 'mock_token_' + Date.now()
-      const userInfo = {
-        name: 'Admin',
-        email: 'admin@example.com',
-        role: 'administrator'
-      }
-      
-      localStorage.setItem('token', token)
-      localStorage.setItem('userInfo', JSON.stringify(userInfo))
-      
-      // 更新 store
-      userStore.token = token
-      userStore.userInfo = userInfo
-      
+    if (result.success) {
       ElMessage.success('登录成功')
       router.push('/')
     } else {
-      ElMessage.error('用户名或密码错误')
+      ElMessage.error(result.message || '用户名或密码错误')
     }
   } catch (error) {
     ElMessage.error('登录失败，请稍后重试')

@@ -47,6 +47,10 @@ define('AUTOMATIC_UPDATER_DISABLED', true);
 // WooCommerce 配置
 define('WC_ENABLE_REST_API', true);
 
+// JWT 认证配置
+define('JWT_AUTH_SECRET_KEY', getenv('API_SECRET_KEY') ?: 'jwt-secret-key-change-me');
+define('JWT_AUTH_CORS_ENABLE', true);
+
 // 内存限制
 define('WP_MEMORY_LIMIT', '256M');
 define('WP_MAX_MEMORY_LIMIT', '512M');

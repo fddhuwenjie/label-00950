@@ -186,51 +186,20 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { settingsApi } from '@/utils/api'
 
 const activeMenu = ref('general')
+const loadingSettings = ref(false)
 
-// 使用 cookie 存储设置（可跨端口共享）
-const setCookie = (name, value, days = 365) => {
-  const expires = new Date()
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000)
-  document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires.toUTCString()};path=/`
-}
-
-const getCookie = (name) => {
-  const nameEQ = name + '='
-  const ca = document.cookie.split(';')
-  for (let i = 0; i < ca.length; i++) {
-    let c = ca[i]
-    while (c.charAt(0) === ' ') c = c.substring(1, c.length)
-    if (c.indexOf(nameEQ) === 0) return decodeURIComponent(c.substring(nameEQ.length, c.length))
-  }
-  return null
-}
-
-// 从 cookie 加载设置
-const loadSettings = () => {
-  const saved = getCookie('siteSettings')
-  if (saved) {
-    try {
-      return JSON.parse(saved)
-    } catch (e) {
-      return null
-    }
-  }
-  return null
-}
-
-const savedSettings = loadSettings()
-
-const generalSettings = reactive(savedSettings?.general || {
+const generalSettings = reactive({
   siteName: '跨境电商商城',
   siteDescription: '全球精选商品，品质保证，快速配送',
   contactEmail: 'support@example.com',
-  contactPhone: '+1-800-123-4567',
-  address: '123 Commerce St, New York, NY 10001, USA'
+  contactPhone: '+86 400-888-8888',
+  address: ''
 })
 
-const paymentSettings = reactive(savedSettings?.payment || {
+const paymentSettings = reactive({
   paypalEnabled: true,
   paypalClientId: '',
   paypalSecret: '',
@@ -239,20 +208,20 @@ const paymentSettings = reactive(savedSettings?.payment || {
   stripeSecretKey: ''
 })
 
-const shippingSettings = reactive(savedSettings?.shipping || {
+const shippingSettings = reactive({
   freeShippingThreshold: 99,
-  defaultShippingFee: 9.99,
+  defaultShippingFee: 15,
   warehouseAddress: 'Warehouse A, Logistics Center',
-  estimatedDelivery: '7-14 个工作日'
+  estimatedDelivery: '7-15个工作日'
 })
 
-const currencySettings = reactive(savedSettings?.currency || {
+const currencySettings = reactive({
   defaultCurrency: 'USD',
   supportedCurrencies: ['USD', 'CNY', 'EUR'],
   autoUpdateRates: true
 })
 
-const notificationSettings = reactive(savedSettings?.notification || {
+const notificationSettings = reactive({
   newOrder: true,
   orderStatus: true,
   lowStock: true,
@@ -260,21 +229,57 @@ const notificationSettings = reactive(savedSettings?.notification || {
   newUser: false
 })
 
+// 从 WordPress API 加载设置
+onMounted(async () => {
+  loadingSettings.value = true
+  try {
+    const settings = await settingsApi.get()
+    if (settings.siteName) generalSettings.siteName = settings.siteName
+    if (settings.siteDescription) generalSettings.siteDescription = settings.siteDescription
+    if (settings.contactEmail) generalSettings.contactEmail = settings.contactEmail
+    if (settings.contactPhone) generalSettings.contactPhone = settings.contactPhone
+    if (settings.address) generalSettings.address = settings.address
+    if (settings.defaultShippingFee) shippingSettings.defaultShippingFee = settings.defaultShippingFee
+    if (settings.estimatedDelivery) shippingSettings.estimatedDelivery = settings.estimatedDelivery
+  } catch (e) {
+    console.error('加载设置失败:', e)
+  } finally {
+    loadingSettings.value = false
+  }
+})
+
 const handleMenuSelect = (index) => {
   activeMenu.value = index
 }
 
-const saveSettings = (type) => {
-  // 保存所有设置到 cookie（可跨端口共享）
-  const allSettings = {
-    general: { ...generalSettings },
-    payment: { ...paymentSettings },
-    shipping: { ...shippingSettings },
-    currency: { ...currencySettings },
-    notification: { ...notificationSettings }
+const saveSettings = async (type) => {
+  try {
+    if (type === 'general') {
+      await settingsApi.update({
+        siteName: generalSettings.siteName,
+        siteDescription: generalSettings.siteDescription,
+        contactEmail: generalSettings.contactEmail,
+        contactPhone: generalSettings.contactPhone,
+        address: generalSettings.address,
+      })
+    } else if (type === 'shipping') {
+      await settingsApi.update({
+        defaultShippingFee: shippingSettings.defaultShippingFee,
+        estimatedDelivery: shippingSettings.estimatedDelivery,
+      })
+    }
+    // 支付、货币、通知设置暂存 localStorage
+    if (['payment', 'currency', 'notification'].includes(type)) {
+      const localSettings = JSON.parse(localStorage.getItem('localSettings') || '{}')
+      localSettings[type] = type === 'payment' ? { ...paymentSettings }
+        : type === 'currency' ? { ...currencySettings }
+        : { ...notificationSettings }
+      localStorage.setItem('localSettings', JSON.stringify(localSettings))
+    }
+    ElMessage.success(`${getSettingsName(type)} 已保存`)
+  } catch (e) {
+    ElMessage.error('保存失败: ' + e.message)
   }
-  setCookie('siteSettings', JSON.stringify(allSettings))
-  ElMessage.success(`${getSettingsName(type)} 已保存`)
 }
 
 const getSettingsName = (type) => {

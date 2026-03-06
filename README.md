@@ -37,7 +37,7 @@ docker-compose logs -f
 1. 复制 `.env.example` 为 `.env` 并修改所有默认密码
 2. 生成新的 WordPress 安全密钥（访问 https://api.wordpress.org/secret-key/1.1/salt/）
 3. 设置强密码（至少12位，包含大小写字母、数字和特殊字符）
-4. 限制 CORS 允许的域名（修改 `backend/api/products.php` 中的 `$allowedOrigins`）
+4. 修改 `API_SECRET_KEY` 环境变量为随机字符串
 
 ### 停止项目
 
@@ -66,13 +66,23 @@ docker-compose down -v
 
 ## 测试账号
 
-首次启动时，系统会根据环境变量创建管理员账号。默认配置如下（可通过 `.env` 文件修改）：
+首次启动时，系统会自动安装 WordPress + WooCommerce 并创建管理员账号和测试用户。
+
+### 管理员账号（后台管理 + WordPress 后台）
 
 | 配置项 | 默认值 |
 |--------|------|
 | 用户名 | admin |
-| 密码 | admin_change_me |
+| 密码 | admin123 |
 | 邮箱 | admin@example.com |
+
+### 测试用户账号（用户端商城）
+
+| 配置项 | 默认值 |
+|--------|------|
+| 用户名 | testuser |
+| 密码 | test123 |
+| 邮箱 | test@example.com |
 
 ⚠️ 生产环境部署前请务必修改默认密码。
 
@@ -186,52 +196,54 @@ docker-compose down -v
 
 ### 安全特性
 
-- 🛡️ CSRF 保护
-- 🔐 XSS 防护（输入清理和输出转义）
-- ⏱️ 速率限制
-- 📝 安全事件日志
+- 🔐 Token 认证（HMAC-SHA256 签名，7天有效期）
+- 🛡️ WordPress 内置安全机制
 - 🔑 环境变量管理敏感信息
-- 🔒 安全响应头（CSP、X-Frame-Options 等）
+- 🔒 Nginx 反向代理隔离后端
 
 ## API 接口
 
-本项目提供两套 API 接口：
+本项目前端统一对接 WordPress/WooCommerce REST API（通过自定义插件 `cbc/v1`），所有数据存储在 WordPress 数据库中。
 
-### 1. 简化 PHP API（前端默认使用）
+### 认证接口
 
-前端应用默认对接 `/api` 路径下的简化 PHP API，适用于快速开发和演示：
+- `POST /wp-json/cbc/v1/auth/login` - 用户登录获取 Token
+- `POST /wp-json/cbc/v1/auth/register` - 用户注册
+- `GET /wp-json/cbc/v1/auth/me` - 获取当前用户信息（需认证）
 
-- `GET /api/products.php` - 获取商品列表
-- `GET /api/products.php/{id}` - 获取商品详情
-- `POST /api/products.php` - 添加商品
-- `PUT /api/products.php/{id}` - 更新商品
-- `DELETE /api/products.php/{id}` - 删除商品
+### 商品接口
 
-### 2. WordPress REST API（完整功能）
-
-基于 WordPress/WooCommerce 的完整 REST API，适用于生产环境：
-
-#### 商品接口
-
-- `GET /wp-json/cbc/v1/products` - 获取商品列表
+- `GET /wp-json/cbc/v1/products` - 获取商品列表（WooCommerce 数据）
 - `GET /wp-json/cbc/v1/products/{id}` - 获取商品详情
-- `GET /wp-json/cbc/v1/categories` - 获取分类列表
+- `POST /wp-json/cbc/v1/products` - 添加商品（需管理员权限）
+- `PUT /wp-json/cbc/v1/products/{id}` - 更新商品（需管理员权限）
+- `DELETE /wp-json/cbc/v1/products/{id}` - 删除商品（需管理员权限）
 
-#### 订单接口
+### 分类接口
 
-- `GET /wp-json/cbc/v1/orders` - 获取订单列表
-- `POST /wp-json/cbc/v1/orders` - 创建订单
+- `GET /wp-json/cbc/v1/categories` - 获取商品分类列表
 
-#### 工具接口（简化实现）
+### 订单接口
 
-- `GET /wp-json/cbc/v1/currency/convert` - 货币转换（示例汇率数据）
-- `POST /wp-json/cbc/v1/shipping/calculate` - 运费计算（示例计算逻辑）
+- `GET /wp-json/cbc/v1/orders` - 获取订单列表（需认证）
+- `POST /wp-json/cbc/v1/orders` - 创建订单（需认证）
 
-#### 认证接口
+### 跨境电商功能接口
 
-- `POST /wp-json/jwt-auth/v1/token` - 用户登录获取 Token
+- `GET /wp-json/cbc/v1/currency/convert?amount=100&from=USD&to=CNY` - 货币转换
+- `POST /wp-json/cbc/v1/shipping/calculate` - 国际物流运费计算
+- `POST /wp-json/cbc/v1/duty/calculate` - 关税计算
 
-> 注：货币转换、运费计算、关税计算等跨境功能目前为简化实现，使用示例数据。生产环境应对接实时汇率 API（如 Open Exchange Rates）和物流服务商 API。
+### 站点设置接口
+
+- `GET /wp-json/cbc/v1/settings` - 获取站点设置
+- `POST /wp-json/cbc/v1/settings` - 更新站点设置（需管理员权限）
+
+### 仪表盘接口
+
+- `GET /wp-json/cbc/v1/dashboard` - 获取仪表盘统计数据（需管理员权限）
+
+> 注：货币转换使用预设汇率数据，运费和关税计算使用区域化费率表。生产环境建议对接实时汇率 API（如 Open Exchange Rates）和物流服务商 API（如 DHL、FedEx）。
 
 ## 开发说明
 

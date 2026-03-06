@@ -1,22 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-
-// 模拟用户数据库（实际应用中应该存储在后端）
-const registeredUsers = ref(
-  JSON.parse(localStorage.getItem('registeredUsers') || '[]')
-)
-
-// 初始化默认管理员账号（密码应通过环境变量配置）
-if (!registeredUsers.value.find(u => u.username === 'admin')) {
-  registeredUsers.value.push({
-    id: 1,
-    username: 'admin',
-    email: 'admin@example.com',
-    password: 'admin_change_me', // 与 docker-compose 默认值一致
-    name: 'Admin'
-  })
-  localStorage.setItem('registeredUsers', JSON.stringify(registeredUsers.value))
-}
+import { authApi } from '../utils/api'
 
 export const useUserStore = defineStore('user', () => {
   const token = ref(localStorage.getItem('token') || '')
@@ -24,76 +8,32 @@ export const useUserStore = defineStore('user', () => {
 
   const isLoggedIn = computed(() => !!token.value)
 
-  // 登录 - 验证已注册的用户
+  // 登录 - 调用 WordPress REST API
   async function login(username, password) {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    // 从已注册用户中查找
-    const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]')
-    const user = users.find(u => 
-      (u.username === username || u.email === username) && u.password === password
-    )
-    
-    if (user) {
-      const mockToken = 'user_token_' + Date.now()
-      const mockUserInfo = {
-        id: user.id,
-        name: user.name || user.username,
-        email: user.email,
-        username: user.username
-      }
-      
-      token.value = mockToken
-      userInfo.value = mockUserInfo
-      
-      localStorage.setItem('token', mockToken)
-      localStorage.setItem('userInfo', JSON.stringify(mockUserInfo))
-      
+    try {
+      const res = await authApi.login(username, password)
+      token.value = res.token
+      userInfo.value = res.user
+      localStorage.setItem('token', res.token)
+      localStorage.setItem('userInfo', JSON.stringify(res.user))
       return { success: true }
-    }
-    
-    return { 
-      success: false, 
-      message: '用户名或密码错误' 
+    } catch (error) {
+      return { success: false, message: error.message || '登录失败' }
     }
   }
 
-  // 注册 - 将用户保存到本地
-  async function register(username, email, password) {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    const users = JSON.parse(localStorage.getItem('registeredUsers') || '[]')
-    
-    // 检查用户名是否已存在
-    if (users.find(u => u.username === username)) {
-      return { 
-        success: false, 
-        message: '用户名已存在' 
-      }
+  // 注册 - 调用 WordPress REST API
+  async function register(userData) {
+    try {
+      const res = await authApi.register(userData)
+      token.value = res.token
+      userInfo.value = res.user
+      localStorage.setItem('token', res.token)
+      localStorage.setItem('userInfo', JSON.stringify(res.user))
+      return { success: true }
+    } catch (error) {
+      return { success: false, message: error.message || '注册失败' }
     }
-    
-    // 检查邮箱是否已存在
-    if (users.find(u => u.email === email)) {
-      return { 
-        success: false, 
-        message: '邮箱已被注册' 
-      }
-    }
-    
-    // 创建新用户
-    const newUser = {
-      id: users.length + 1,
-      username,
-      email,
-      password, // 实际应用中需要加密
-      name: username,
-      createdAt: new Date().toISOString()
-    }
-    
-    users.push(newUser)
-    localStorage.setItem('registeredUsers', JSON.stringify(users))
-    
-    return { success: true }
   }
 
   function logout() {

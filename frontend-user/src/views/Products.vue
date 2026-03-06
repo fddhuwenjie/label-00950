@@ -152,7 +152,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ProductCard from '@/components/ProductCard.vue'
-import { loadProducts } from '@/utils/productStorage'
+import { productApi } from '@/utils/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -173,7 +173,9 @@ onMounted(async () => {
   // 加载商品数据
   loading.value = true
   try {
-    products.value = await loadProducts()
+    products.value = await productApi.getAll()
+  } catch (e) {
+    console.error('加载商品失败:', e)
   } finally {
     loading.value = false
   }

@@ -196,7 +196,12 @@ const handleRegister = async () => {
   loading.value = true
   
   try {
-    const result = await userStore.register(form.username, form.email, form.password)
+    const result = await userStore.register({
+      username: form.username,
+      email: form.email,
+      password: form.password,
+      name: form.username,
+    })
     
     if (result.success) {
       toast.success('注册成功，请登录')

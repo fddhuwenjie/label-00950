@@ -114,7 +114,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import toast from '@/utils/toast'
-import { getProductById } from '@/utils/productStorage'
+import { productApi } from '@/utils/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -183,10 +183,10 @@ const handleBuyNow = () => {
 }
 
 onMounted(async () => {
-  const productId = parseInt(route.params.id)
-  product.value = await getProductById(productId)
-  
-  if (!product.value) {
+  try {
+    product.value = await productApi.getById(route.params.id)
+  } catch (e) {
+    console.error('加载商品失败:', e)
     toast.error('商品不存在')
     router.push('/products')
   }

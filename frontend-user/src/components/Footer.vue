@@ -79,10 +79,23 @@
 </template>
 
 <script setup>
-import { reactive } from 'vue'
-import { getGeneralSettings } from '@/utils/settings'
+import { reactive, onMounted } from 'vue'
+import { settingsApi } from '@/utils/api'
 
-const siteSettings = reactive(getGeneralSettings())
+const siteSettings = reactive({
+  siteDescription: '汇聚全球顶级品牌，为您精选来自世界各地的优质好物',
+  contactEmail: 'support@example.com',
+  contactPhone: '+86 400-888-8888',
+})
+
+onMounted(async () => {
+  try {
+    const settings = await settingsApi.get()
+    Object.assign(siteSettings, settings)
+  } catch (e) {
+    // 使用默认值
+  }
+})
 </script>
 
 <style lang="scss" scoped>

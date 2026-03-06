@@ -12,7 +12,6 @@ services:
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-wordpress_password_change_me}
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./backend/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
     networks:
       - ecommerce-network
     healthcheck:
@@ -21,36 +20,28 @@ services:
       timeout: 5s
       retries: 5
 
-  # WordPress 后端
+  # WordPress + WooCommerce 后端
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ecommerce-backend
     restart: unless-stopped
+    environment:
+      WORDPRESS_DB_HOST: mysql
+      WORDPRESS_DB_USER: ${MYSQL_USER:-wordpress}
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD:-wordpress_password_change_me}
+      WORDPRESS_DB_NAME: ${MYSQL_DATABASE:-wordpress}
+      WP_HOME: http://localhost:9080
+      WP_ADMIN_USER: ${WP_ADMIN_USER:-admin}
+      WP_ADMIN_PASSWORD: ${WP_ADMIN_PASSWORD:-admin123}
+      WP_ADMIN_EMAIL: ${WP_ADMIN_EMAIL:-admin@example.com}
+      API_SECRET_KEY: ${API_SECRET_KEY:-cross-border-jwt-secret-2024}
+    volumes:
+      - wordpress_data:/var/www/html
     depends_on:
       mysql:
         condition: service_healthy
-    environment:
-      WORDPRESS_DB_HOST: mysql
-      WORDPRESS_DB_NAME: ${MYSQL_DATABASE:-wordpress}
-      WORDPRESS_DB_USER: ${MYSQL_USER:-wordpress}
-      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD:-wordpress_password_change_me}
-      WP_HOME: ${WP_HOME:-http://localhost:9080}
-      WP_SITEURL: ${WP_SITEURL:-http://localhost:9080}
-      WP_ADMIN_USER: ${WP_ADMIN_USER:-admin}
-      WP_ADMIN_PASSWORD: ${WP_ADMIN_PASSWORD:-admin_change_me}
-      WP_ADMIN_EMAIL: ${WP_ADMIN_EMAIL:-admin@example.com}
-      WP_DEBUG: ${WP_DEBUG:-false}
-      WP_AUTH_KEY: ${WP_AUTH_KEY:-put-your-unique-phrase-here}
-      WP_SECURE_AUTH_KEY: ${WP_SECURE_AUTH_KEY:-put-your-unique-phrase-here}
-      WP_LOGGED_IN_KEY: ${WP_LOGGED_IN_KEY:-put-your-unique-phrase-here}
-      WP_NONCE_KEY: ${WP_NONCE_KEY:-put-your-unique-phrase-here}
-      API_SECRET_KEY: ${API_SECRET_KEY:-api_secret_change_me}
-    volumes:
-      - wordpress_data:/var/www/html
-      - ./backend/plugins:/var/www/html/wp-content/plugins/custom
-      - ./backend/api:/var/www/html/api
     ports:
       - "9080:80"
     networks:

@@ -140,8 +140,6 @@ const handleLogin = async () => {
   loading.value = true
   
   try {
-    await new Promise(resolve => setTimeout(resolve, 800))
-    
     const result = await userStore.login(form.username, form.password)
     
     if (result.success) {
