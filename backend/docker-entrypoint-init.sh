@@ -127,4 +127,12 @@ else
     echo "初始化已完成，跳过。"
 fi
 
+# 确保商品图片目录存在（每次启动都复制，保证图片可用）
+if [ -d "/opt/product-images" ]; then
+    mkdir -p /var/www/html/images/products
+    cp -r /opt/product-images/* /var/www/html/images/products/ 2>/dev/null || true
+    chown -R www-data:www-data /var/www/html/images/
+    echo "商品图片已复制到 /var/www/html/images/products/"
+fi
+
 echo "初始化脚本执行完毕"
