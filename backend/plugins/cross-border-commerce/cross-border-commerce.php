@@ -53,6 +53,23 @@ class Cross_Border_Commerce {
         require_once CBC_PLUGIN_DIR . 'includes/class-shipping-calculator.php';
     }
 
+    /**
+     * 检查 WooCommerce 是否已加载，如未加载则尝试手动加载
+     */
+    private function ensure_wc_loaded() {
+        if (!function_exists('wc_get_products')) {
+            // 尝试手动加载 WooCommerce
+            if (defined('WC_ABSPATH') && file_exists(WC_ABSPATH . 'includes/wc-product-functions.php')) {
+                include_once WC_ABSPATH . 'includes/wc-product-functions.php';
+                include_once WC_ABSPATH . 'includes/wc-order-functions.php';
+            }
+        }
+        if (!function_exists('wc_get_products')) {
+            return new WP_Error('wc_not_ready', 'WooCommerce 尚未加载完成，请稍后重试', array('status' => 503));
+        }
+        return true;
+    }
+
     public function register_routes() {
         $namespace = 'cbc/v1';
 
@@ -378,6 +395,8 @@ class Cross_Border_Commerce {
 
     // ===== 商品 API（使用 WooCommerce 数据） =====
     public function get_products($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
         $per_page = intval($request->get_param('per_page') ?: 50);
         $page = intval($request->get_param('page') ?: 1);
         $category = $request->get_param('category');
@@ -410,6 +429,8 @@ class Cross_Border_Commerce {
     }
 
     public function get_product($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
         $id = intval($request['id']);
         $product = wc_get_product($id);
 
@@ -421,6 +442,8 @@ class Cross_Border_Commerce {
     }
 
     public function create_product($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
         $params = $request->get_json_params();
 
         $product = new WC_Product_Simple();
@@ -459,6 +482,8 @@ class Cross_Border_Commerce {
     }
 
     public function update_product($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
         $id = intval($request['id']);
         $product = wc_get_product($id);
         if (!$product) {
@@ -497,6 +522,8 @@ class Cross_Border_Commerce {
     }
 
     public function delete_product($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
         $id = intval($request['id']);
         $product = wc_get_product($id);
         if (!$product) {
@@ -569,6 +596,8 @@ class Cross_Border_Commerce {
 
     // ===== 订单 =====
     public function get_orders($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
         $user = $this->get_user_from_token($request);
         $is_admin = user_can($user, 'manage_options');
 
@@ -627,6 +656,8 @@ class Cross_Border_Commerce {
     }
 
     public function create_order($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
         $user = $this->get_user_from_token($request);
         $params = $request->get_json_params();
 
@@ -677,6 +708,8 @@ class Cross_Border_Commerce {
     }
 
     public function update_order_status($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
         $order_id = intval($request->get_param('id'));
         $params = $request->get_json_params();
         $new_status = sanitize_text_field($params['status'] ?? '');
@@ -702,6 +735,8 @@ class Cross_Border_Commerce {
     }
 
     public function pay_order($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
         $user = $this->get_user_from_token($request);
         $order_id = intval($request->get_param('id'));
         $order = wc_get_order($order_id);
@@ -867,6 +902,8 @@ class Cross_Border_Commerce {
 
     // ===== 仪表盘 =====
     public function get_dashboard($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
         $orders_count = 0;
         $revenue = 0;
         $orders = wc_get_orders(array('limit' => -1, 'status' => array('processing', 'completed')));

@@ -34,11 +34,15 @@ if ! wp core is-installed --allow-root 2>/dev/null; then
     wp rewrite flush --allow-root
 fi
 
-# 检查 WooCommerce 是否已安装并激活
+# WooCommerce 已在 Dockerfile 中预装到 wp-content/plugins/，只需激活
 if ! wp plugin is-active woocommerce --allow-root 2>/dev/null; then
-    echo "=== 安装 WooCommerce ==="
-    wp plugin install woocommerce --activate --allow-root 2>/dev/null || \
-    wp plugin activate woocommerce --allow-root 2>/dev/null || true
+    echo "=== 激活 WooCommerce ==="
+    wp plugin activate woocommerce --allow-root 2>&1 || echo "WooCommerce 激活失败"
+    # 等待 WooCommerce 创建数据库表
+    echo "等待 WooCommerce 初始化数据库表..."
+    sleep 5
+    # 触发 WooCommerce 数据库更新
+    wp wc update --allow-root 2>/dev/null || true
 fi
 
 # 激活自定义插件

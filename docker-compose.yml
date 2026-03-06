@@ -47,11 +47,11 @@ services:
     networks:
       - ecommerce-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80/wp-json/cbc/v1/products"]
+      test: ["CMD", "curl", "-f", "http://localhost:80/wp-json/"]
       interval: 10s
       timeout: 5s
       retries: 30
-      start_period: 60s
+      start_period: 90s
 
   # 管理后台前端
   frontend-admin:

@@ -22,6 +22,12 @@ RUN curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/bui
     chmod +x /usr/local/bin/wp && \
     wp --info --allow-root || (echo "WP-CLI verification failed" && exit 1)
 
+# 预下载 WooCommerce 插件包（避免运行时 TLS 下载失败）
+RUN mkdir -p /tmp/wc-download && \
+    curl -fSL -o /tmp/wc-download/woocommerce.zip https://downloads.wordpress.org/plugin/woocommerce.10.5.3.zip && \
+    unzip -q /tmp/wc-download/woocommerce.zip -d /usr/src/wordpress/wp-content/plugins/ && \
+    rm -rf /tmp/wc-download
+
 # 安装 Composer 并安装 firebase/php-jwt
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 COPY plugins/cross-border-commerce/composer.json /tmp/jwt-deps/composer.json
