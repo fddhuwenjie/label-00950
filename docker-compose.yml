@@ -89,4 +89,16 @@ networks:
 
 volumes:
   mysql_data:
+    driver: local
+    # 生产环境建议使用外部卷或挂载到宿主机指定目录：
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /data/mysql
   wordpress_data:
+    driver: local
+    # 生产环境建议：
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: /data/wordpress

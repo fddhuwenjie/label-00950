@@ -43,6 +43,11 @@ class Cross_Border_Commerce {
     }
 
     private function includes() {
+        // 加载 Composer 依赖（firebase/php-jwt）
+        $autoload = CBC_PLUGIN_DIR . 'vendor/autoload.php';
+        if (file_exists($autoload)) {
+            require_once $autoload;
+        }
         require_once CBC_PLUGIN_DIR . 'includes/class-currency-converter.php';
         require_once CBC_PLUGIN_DIR . 'includes/class-duty-calculator.php';
         require_once CBC_PLUGIN_DIR . 'includes/class-shipping-calculator.php';
@@ -186,33 +191,38 @@ class Cross_Border_Commerce {
         $token = str_replace('Bearer ', '', $auth);
         if (empty($token)) return null;
 
-        // 解析简单 token（格式: base64(user_id:timestamp:hash)）
-        $decoded = base64_decode($token);
-        if (!$decoded) return null;
-        $parts = explode(':', $decoded);
-        if (count($parts) < 3) return null;
-
-        $user_id = intval($parts[0]);
-        $timestamp = intval($parts[1]);
-        $hash = $parts[2];
-
-        // 验证 token 有效期（7天）
-        if (time() - $timestamp > 7 * 86400) return null;
-
-        // 验证 hash
         $secret = defined('JWT_AUTH_SECRET_KEY') ? JWT_AUTH_SECRET_KEY : 'default-secret';
-        $expected_hash = hash_hmac('sha256', $user_id . ':' . $timestamp, $secret);
-        if (!hash_equals($expected_hash, $hash)) return null;
 
-        $user = get_user_by('ID', $user_id);
-        return $user ?: null;
+        try {
+            // 使用 firebase/php-jwt 标准库解码
+            $decoded = \Firebase\JWT\JWT::decode($token, new \Firebase\JWT\Key($secret, 'HS256'));
+            $user_id = intval($decoded->sub ?? 0);
+            if (!$user_id) return null;
+
+            $user = get_user_by('ID', $user_id);
+            return $user ?: null;
+        } catch (\Firebase\JWT\ExpiredException $e) {
+            // Token 过期
+            return null;
+        } catch (\Exception $e) {
+            // 其他解码错误（签名无效等）
+            return null;
+        }
     }
 
     private function generate_token($user_id) {
-        $timestamp = time();
         $secret = defined('JWT_AUTH_SECRET_KEY') ? JWT_AUTH_SECRET_KEY : 'default-secret';
-        $hash = hash_hmac('sha256', $user_id . ':' . $timestamp, $secret);
-        return base64_encode($user_id . ':' . $timestamp . ':' . $hash);
+        $now = time();
+
+        $payload = array(
+            'iss' => get_bloginfo('url'),       // 签发者
+            'iat' => $now,                       // 签发时间
+            'nbf' => $now,                       // 生效时间
+            'exp' => $now + (7 * 86400),         // 过期时间（7天）
+            'sub' => $user_id,                   // 用户 ID
+        );
+
+        return \Firebase\JWT\JWT::encode($payload, $secret, 'HS256');
     }
 
     // ===== 用户认证 =====
@@ -629,6 +639,7 @@ class Cross_Border_Commerce {
 
         $converter = CBC_Currency_Converter::get_instance();
         $result = $converter->convert($amount, $from, $to);
+        $rate_info = $converter->get_rate_info();
 
         return rest_ensure_response(array(
             'from' => $from,
@@ -636,7 +647,9 @@ class Cross_Border_Commerce {
             'amount' => $amount,
             'converted' => round($result, 2),
             'rate' => $converter->get_rate($from, $to),
-            'formatted' => $converter->format($result, $to),
+            'formatted' => $converter->format_price($result, $to),
+            'source' => $rate_info['source'],
+            'updated_at' => $rate_info['updated_at'],
         ));
     }
 
@@ -645,18 +658,23 @@ class Cross_Border_Commerce {
         $country = sanitize_text_field($params['country'] ?? 'CN');
         $weight = floatval($params['weight'] ?? 1);
         $method = sanitize_text_field($params['method'] ?? 'standard');
+        $dimensions = isset($params['dimensions']) ? array_map('floatval', $params['dimensions']) : array();
+        $order_total = floatval($params['order_total'] ?? 0);
 
         $calculator = CBC_Shipping_Calculator::get_instance();
-        $cost = $calculator->calculate($country, $weight, $method);
 
-        return rest_ensure_response(array(
-            'country' => $country,
-            'weight' => $weight,
-            'method' => $method,
-            'cost' => round($cost, 2),
-            'currency' => 'USD',
-            'estimated_days' => $calculator->get_estimated_days($country, $method),
-        ));
+        // 如果请求所有报价
+        if (!empty($params['all_quotes'])) {
+            $quotes = $calculator->get_all_quotes($country, $weight, $dimensions, $order_total);
+            return rest_ensure_response(array(
+                'country' => $country,
+                'weight' => $weight,
+                'quotes' => $quotes,
+            ));
+        }
+
+        $result = $calculator->calculate($country, $weight, $method, $dimensions, $order_total);
+        return rest_ensure_response($result);
     }
 
     public function calculate_duty($request) {

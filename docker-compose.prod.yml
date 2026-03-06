@@ -1,0 +1,46 @@
+# 生产环境覆盖配置
+# 使用方式: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+services:
+  mysql:
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - /data/mysql:/var/lib/mysql
+    # 生产环境限制资源
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+
+  backend:
+    environment:
+      WORDPRESS_DB_PASSWORD: ${MYSQL_PASSWORD}
+      WP_ADMIN_PASSWORD: ${WP_ADMIN_PASSWORD}
+      API_SECRET_KEY: ${API_SECRET_KEY}
+      # 可选：配置 Open Exchange Rates API Key 获取实时汇率
+      # OXR_APP_ID: ${OXR_APP_ID}
+    volumes:
+      - /data/wordpress:/var/www/html
+      - /data/backups:/backups
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+
+  frontend-admin:
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'
+
+  frontend-user:
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.25'

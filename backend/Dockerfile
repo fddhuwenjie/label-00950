@@ -22,6 +22,14 @@ RUN curl -fsSL -o /usr/local/bin/wp https://raw.githubusercontent.com/wp-cli/bui
     chmod +x /usr/local/bin/wp && \
     wp --info --allow-root || (echo "WP-CLI verification failed" && exit 1)
 
+# 安装 Composer 并安装 firebase/php-jwt
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+COPY plugins/cross-border-commerce/composer.json /tmp/jwt-deps/composer.json
+RUN cd /tmp/jwt-deps && composer install --no-dev --optimize-autoloader \
+    && mkdir -p /usr/src/wordpress/wp-content/plugins/cross-border-commerce/vendor \
+    && cp -r /tmp/jwt-deps/vendor/* /usr/src/wordpress/wp-content/plugins/cross-border-commerce/vendor/ \
+    && rm -rf /tmp/jwt-deps
+
 # 复制自定义配置
 COPY wp-config-docker.php /usr/src/wordpress/wp-config-docker.php
 COPY uploads.ini /usr/local/etc/php/conf.d/uploads.ini

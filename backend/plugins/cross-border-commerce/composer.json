@@ -1,0 +1,14 @@
+{
+    "name": "cbc/cross-border-commerce",
+    "description": "Cross-border e-commerce WordPress plugin dependencies",
+    "require": {
+        "firebase/php-jwt": "^6.10"
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "audit": {
+            "abandoned": "report",
+            "block-insecure": false
+        }
+    }
+}

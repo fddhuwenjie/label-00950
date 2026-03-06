@@ -189,14 +189,14 @@ docker-compose down -v
 
 ### 跨境电商特性
 
-- 💱 多货币支持
-- 🌍 国际物流计算
-- 📋 关税计算
+- 💱 多货币支持（实时汇率 API，支持 20+ 币种，自动降级机制）
+- 🌍 国际物流计算（多物流商费率、体积重计费、免运费门槛、偏远地区附加费）
+- 📋 关税计算（基于商品类目和目的国税率）
 - 🔒 CORS 跨域支持
 
 ### 安全特性
 
-- 🔐 Token 认证（HMAC-SHA256 签名，7天有效期）
+- 🔐 JWT 认证（基于 firebase/php-jwt 标准库，HS256 签名，7天有效期）
 - 🛡️ WordPress 内置安全机制
 - 🔑 环境变量管理敏感信息
 - 🔒 Nginx 反向代理隔离后端
@@ -227,11 +227,12 @@ docker-compose down -v
 
 - `GET /wp-json/cbc/v1/orders` - 获取订单列表（需认证）
 - `POST /wp-json/cbc/v1/orders` - 创建订单（需认证）
+- `PUT /wp-json/cbc/v1/orders/{id}/status` - 更新订单状态（需管理员权限）
 
 ### 跨境电商功能接口
 
-- `GET /wp-json/cbc/v1/currency/convert?amount=100&from=USD&to=CNY` - 货币转换
-- `POST /wp-json/cbc/v1/shipping/calculate` - 国际物流运费计算
+- `GET /wp-json/cbc/v1/currency/convert?amount=100&from=USD&to=CNY` - 货币转换（实时汇率）
+- `POST /wp-json/cbc/v1/shipping/calculate` - 国际物流运费计算（支持多物流商报价）
 - `POST /wp-json/cbc/v1/duty/calculate` - 关税计算
 
 ### 站点设置接口
@@ -243,7 +244,7 @@ docker-compose down -v
 
 - `GET /wp-json/cbc/v1/dashboard` - 获取仪表盘统计数据（需管理员权限）
 
-> 注：货币转换使用预设汇率数据，运费和关税计算使用区域化费率表。生产环境建议对接实时汇率 API（如 Open Exchange Rates）和物流服务商 API（如 DHL、FedEx）。
+> 注：货币转换优先对接 ExchangeRate-API / Open Exchange Rates 获取实时汇率（每小时缓存），API 不可用时自动降级为内置参考汇率。物流运费支持标准物流/DHL/FedEx/EMS 多种方式，基于区域费率表计算（含体积重、免运费门槛、偏远附加费）。JWT 认证使用 firebase/php-jwt 标准库。
 
 ## 开发说明
 
@@ -272,6 +273,30 @@ docker-compose build
 
 # 重新构建并启动
 docker-compose up --build -d
+```
+
+### 数据备份与恢复
+
+```bash
+# 执行数据备份（包含数据库、上传文件、插件配置）
+./backup.sh ./backups
+
+# 定时备份（每天凌晨 2 点）
+# crontab -e
+# 0 2 * * * /path/to/backup.sh /data/backups
+
+# 恢复数据库
+docker exec -i ecommerce-mysql mysql -u wordpress -p wordpress < backup/database.sql
+```
+
+### 生产环境部署
+
+```bash
+# 使用生产配置启动（覆盖资源限制、数据目录等）
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# 配置实时汇率 API（可选，免费注册 https://openexchangerates.org）
+# 在 .env 中添加: OXR_APP_ID=your_app_id
 ```
 
 ## License
