@@ -31,7 +31,17 @@
         <!-- 商品信息 -->
         <div class="product-info">
           <h1 class="product-name">{{ product.name }}</h1>
-          
+
+          <div class="product-rating-bar" v-if="reviewSummary.count > 0">
+            <StarRating :model-value="reviewSummary.average" readonly size="md" />
+            <span class="rating-score">{{ reviewSummary.average.toFixed(1) }}</span>
+            <span class="rating-count">{{ reviewSummary.count }} 条评价</span>
+          </div>
+          <div class="product-rating-bar empty" v-else>
+            <StarRating :model-value="0" readonly size="md" />
+            <span class="rating-count">暂无评价</span>
+          </div>
+
           <div class="product-price">
             <span class="current-price">${{ displayPrice }}</span>
             <span v-if="product.salePrice" class="original-price">${{ product.price.toFixed(2) }}</span>
@@ -100,7 +110,10 @@
           </div>
         </div>
       </div>
-      
+
+      <!-- 商品评价模块 -->
+      <ProductReviews v-if="product" :product-id="product.id" class="reviews-section" />
+
       <div v-else class="loading">
         <p>加载中...</p>
       </div>
@@ -109,12 +122,14 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import toast from '@/utils/toast'
-import { productApi } from '@/utils/api'
+import { productApi, productReviewApi } from '@/utils/api'
+import StarRating from '@/components/StarRating.vue'
+import ProductReviews from '@/components/ProductReviews.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -124,6 +139,7 @@ const userStore = useUserStore()
 const product = ref(null)
 const quantity = ref(1)
 const currentImageIndex = ref(0)
+const reviewSummary = reactive({ average: 0, count: 0 })
 
 const categories = {
   electronics: '数码电子',
@@ -189,6 +205,16 @@ onMounted(async () => {
     console.error('加载商品失败:', e)
     toast.error('商品不存在')
     router.push('/products')
+    return
+  }
+
+  // 拉取综合评分
+  try {
+    const data = await productReviewApi.summary(route.params.id)
+    reviewSummary.average = Number(data.average || 0)
+    reviewSummary.count = Number(data.count || 0)
+  } catch (e) {
+    // 静默忽略
   }
 })
 </script>
@@ -285,10 +311,34 @@ onMounted(async () => {
     font-size: 28px;
     font-weight: 700;
     color: #1a1a1a;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     line-height: 1.4;
   }
-  
+
+  .product-rating-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px dashed #eee;
+
+    .rating-score {
+      font-size: 18px;
+      font-weight: 700;
+      color: #f59e0b;
+    }
+
+    .rating-count {
+      font-size: 14px;
+      color: #999;
+    }
+
+    &.empty .rating-count {
+      color: #bbb;
+    }
+  }
+
   .product-price {
     display: flex;
     align-items: center;
@@ -456,6 +506,14 @@ onMounted(async () => {
       }
     }
   }
+}
+
+.reviews-section {
+  margin-top: 30px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 30px 40px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
 .loading {

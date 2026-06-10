@@ -58,6 +58,13 @@
               <button v-if="order.status === 'pending'" class="btn-primary" @click="handlePay(order)">
                 去支付
               </button>
+              <button
+                v-if="order.status === 'completed'"
+                class="btn-primary"
+                @click="openReviewModal(order)"
+              >
+                {{ order.allReviewed ? '已评价' : '去评价' }}
+              </button>
               <button class="btn-outline" @click="viewOrderDetail(order)">
                 订单详情
               </button>
@@ -205,13 +212,105 @@
         </div>
       </div>
     </div>
+
+    <!-- 评价弹窗 -->
+    <div v-if="showReviewModal" class="modal-overlay" @click="closeReviewModal">
+      <div class="modal-content review-modal" @click.stop>
+        <div class="modal-header">
+          <h3>商品评价</h3>
+          <button class="close-btn" @click="closeReviewModal">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="modal-body">
+          <div v-if="reviewLoading" class="review-loading">加载中...</div>
+          <div v-else-if="reviewableItems.length === 0" class="review-loading">
+            暂无可评价商品
+          </div>
+
+          <div v-else class="review-items">
+            <div v-for="item in reviewableItems" :key="item.product_id" class="review-target">
+              <div class="target-head">
+                <img :src="item.image" :alt="item.name" class="target-image" />
+                <div class="target-info">
+                  <span class="name">{{ item.name }}</span>
+                  <span v-if="item.reviewed" class="reviewed-tag">已评价</span>
+                </div>
+              </div>
+
+              <div v-if="!item.reviewed" class="review-form">
+                <div class="form-row">
+                  <span class="label">评分：</span>
+                  <StarRating
+                    v-model="reviewForms[item.product_id].rating"
+                    size="lg"
+                    show-text
+                  />
+                </div>
+
+                <div class="form-row">
+                  <span class="label">评价：</span>
+                  <textarea
+                    v-model="reviewForms[item.product_id].content"
+                    rows="3"
+                    maxlength="2000"
+                    placeholder="分享您对该商品的真实使用体验..."
+                  ></textarea>
+                </div>
+
+                <div class="form-row">
+                  <span class="label">晒图：</span>
+                  <div class="image-uploader">
+                    <div
+                      v-for="(img, idx) in reviewForms[item.product_id].images"
+                      :key="idx"
+                      class="upload-thumb"
+                    >
+                      <img :src="img" alt="已上传图片" />
+                      <button class="remove-btn" @click="removeImage(item.product_id, idx)">×</button>
+                    </div>
+                    <label
+                      v-if="reviewForms[item.product_id].images.length < 3"
+                      class="upload-btn"
+                      :class="{ uploading: reviewForms[item.product_id].uploading }"
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        :disabled="reviewForms[item.product_id].uploading"
+                        @change="(e) => handleImageUpload(e, item.product_id)"
+                      />
+                      <span v-if="!reviewForms[item.product_id].uploading">+ 上传</span>
+                      <span v-else>上传中...</span>
+                    </label>
+                  </div>
+                </div>
+
+                <button
+                  class="submit-review-btn"
+                  :disabled="reviewForms[item.product_id].submitting"
+                  @click="submitReview(item)"
+                >
+                  {{ reviewForms[item.product_id].submitting ? '提交中...' : '提交评价' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, reactive, onMounted } from 'vue'
 import toast from '@/utils/toast'
-import { orderApi } from '@/utils/api'
+import { orderApi, productReviewApi } from '@/utils/api'
+import StarRating from '@/components/StarRating.vue'
 
 const activeTab = ref('all')
 const showDetailModal = ref(false)
@@ -220,6 +319,13 @@ const selectedOrder = ref(null)
 const payOrder = ref(null)
 const payMethod = ref('alipay')
 const loading = ref(false)
+
+// 评价相关
+const showReviewModal = ref(false)
+const reviewLoading = ref(false)
+const reviewableItems = ref([])
+const reviewOrder = ref(null)
+const reviewForms = reactive({})
 
 const tabs = [
   { id: 'all', label: '全部订单' },
@@ -321,6 +427,117 @@ const confirmPay = async () => {
     } catch (e) {
       toast.error(e.message || '支付失败，请重试')
     }
+  }
+}
+
+// ===== 评价相关 =====
+const openReviewModal = async (order) => {
+  reviewOrder.value = order
+  showReviewModal.value = true
+  reviewLoading.value = true
+  reviewableItems.value = []
+  try {
+    const data = await productReviewApi.orderReviewable(order.rawId)
+    reviewableItems.value = data.items || []
+    // 初始化每个商品的表单
+    reviewableItems.value.forEach((item) => {
+      if (!reviewForms[item.product_id]) {
+        reviewForms[item.product_id] = {
+          rating: 5,
+          content: '',
+          images: [],
+          uploading: false,
+          submitting: false,
+        }
+      }
+    })
+    // 标记订单是否已全部评价
+    order.allReviewed = reviewableItems.value.length > 0 && reviewableItems.value.every((it) => it.reviewed)
+  } catch (e) {
+    toast.error(e.message || '加载失败')
+    showReviewModal.value = false
+  } finally {
+    reviewLoading.value = false
+  }
+}
+
+const closeReviewModal = () => {
+  showReviewModal.value = false
+  reviewOrder.value = null
+  reviewableItems.value = []
+}
+
+const handleImageUpload = async (event, productId) => {
+  const file = event.target.files && event.target.files[0]
+  // 重置 input，便于重复上传同一文件
+  event.target.value = ''
+  if (!file) return
+
+  const form = reviewForms[productId]
+  if (!form) return
+  if (form.images.length >= 3) {
+    toast.warning('最多上传 3 张图片')
+    return
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    toast.error('图片大小不能超过 5MB')
+    return
+  }
+
+  form.uploading = true
+  try {
+    const res = await productReviewApi.uploadImage(file)
+    if (res && res.url) {
+      form.images.push(res.url)
+    } else {
+      toast.error('上传失败')
+    }
+  } catch (e) {
+    toast.error(e.message || '上传失败')
+  } finally {
+    form.uploading = false
+  }
+}
+
+const removeImage = (productId, idx) => {
+  const form = reviewForms[productId]
+  if (!form) return
+  form.images.splice(idx, 1)
+}
+
+const submitReview = async (item) => {
+  if (!reviewOrder.value) return
+  const form = reviewForms[item.product_id]
+  if (!form) return
+
+  if (!form.rating || form.rating < 1 || form.rating > 5) {
+    toast.warning('请选择评分')
+    return
+  }
+  if (!form.content || form.content.trim() === '') {
+    toast.warning('请填写评价内容')
+    return
+  }
+
+  form.submitting = true
+  try {
+    await productReviewApi.create({
+      product_id: item.product_id,
+      order_id: reviewOrder.value.rawId,
+      rating: form.rating,
+      content: form.content.trim(),
+      images: form.images,
+    })
+    toast.success('评价提交成功')
+    item.reviewed = true
+    // 检查订单是否全部评价
+    if (reviewableItems.value.every((it) => it.reviewed)) {
+      reviewOrder.value.allReviewed = true
+    }
+  } catch (e) {
+    toast.error(e.message || '提交失败')
+  } finally {
+    form.submitting = false
   }
 }
 </script>
@@ -933,6 +1150,194 @@ const confirmPay = async () => {
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 12px 32px rgba(99, 102, 241, 0.4);
+  }
+}
+
+// 评价弹窗
+.review-modal {
+  max-width: 640px;
+}
+
+.review-loading {
+  text-align: center;
+  padding: 40px 0;
+  color: #999;
+}
+
+.review-items {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.review-target {
+  border: 1px solid #f0f0f0;
+  border-radius: 16px;
+  padding: 20px;
+  background: #fafafa;
+}
+
+.target-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+
+  .target-image {
+    width: 56px;
+    height: 56px;
+    border-radius: 10px;
+    object-fit: cover;
+    background: #fff;
+  }
+
+  .target-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+
+    .name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1a1a1a;
+      line-height: 1.4;
+    }
+
+    .reviewed-tag {
+      align-self: flex-start;
+      padding: 2px 10px;
+      background: #d1fae5;
+      color: #047857;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+    }
+  }
+}
+
+.review-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  .form-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    .label {
+      width: 48px;
+      flex-shrink: 0;
+      color: #666;
+      font-size: 14px;
+      padding-top: 4px;
+    }
+
+    textarea {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #e5e5e5;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.2s;
+
+      &:focus {
+        border-color: #6366f1;
+      }
+    }
+  }
+
+  .image-uploader {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .upload-thumb {
+    position: relative;
+    width: 76px;
+    height: 76px;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid #e5e5e5;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .remove-btn {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  }
+
+  .upload-btn {
+    width: 76px;
+    height: 76px;
+    border-radius: 10px;
+    border: 1.5px dashed #c5c5c5;
+    background: #fff;
+    color: #999;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+
+    input { display: none; }
+
+    &:hover {
+      border-color: #6366f1;
+      color: #6366f1;
+    }
+
+    &.uploading {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+  }
+}
+
+.submit-review-btn {
+  align-self: flex-end;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 }
 

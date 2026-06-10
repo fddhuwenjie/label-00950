@@ -173,7 +173,8 @@
           <ProductCard 
             v-for="product in hotProducts" 
             :key="product.id" 
-            :product="product" 
+            :product="product"
+            :rating-summary="ratingMap[product.id] || { average: 0, count: 0 }"
           />
         </div>
       </div>
@@ -222,7 +223,8 @@
           <ProductCard 
             v-for="product in newProducts" 
             :key="product.id" 
-            :product="product" 
+            :product="product"
+            :rating-summary="ratingMap[product.id] || { average: 0, count: 0 }"
           />
         </div>
       </div>
@@ -233,7 +235,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import ProductCard from '@/components/ProductCard.vue'
-import { productApi, settingsApi, categoryApi } from '@/utils/api'
+import { productApi, settingsApi, categoryApi, productReviewApi } from '@/utils/api'
 
 const siteSettings = reactive({
   siteDescription: '汇聚全球顶级品牌，为您精选来自世界各地的优质好物',
@@ -241,6 +243,7 @@ const siteSettings = reactive({
 
 const allProducts = ref([])
 const apiCategories = ref([])
+const ratingMap = reactive({})
 
 onMounted(async () => {
   try {
@@ -252,6 +255,25 @@ onMounted(async () => {
     allProducts.value = products
     if (settings.siteDescription) siteSettings.siteDescription = settings.siteDescription
     apiCategories.value = cats
+
+    // 批量拉取评分汇总
+    if (Array.isArray(products) && products.length > 0) {
+      try {
+        const ids = products.map(p => p.id)
+        const data = await productReviewApi.summaryBatch(ids)
+        if (data && typeof data === 'object') {
+          Object.keys(data).forEach(pid => {
+            const item = data[pid] || {}
+            ratingMap[pid] = {
+              average: Number(item.average || 0),
+              count: Number(item.count || 0)
+            }
+          })
+        }
+      } catch (e) {
+        // 静默忽略
+      }
+    }
   } catch (e) {
     console.error('加载数据失败:', e)
   }

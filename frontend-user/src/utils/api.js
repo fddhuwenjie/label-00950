@@ -4,10 +4,11 @@
  */
 
 const API_BASE = '/wp-json/cbc/v1'
+const REVIEW_API_BASE = '/wp-json/pr/v1'
 
 class ApiClient {
-  constructor() {
-    this.baseURL = API_BASE
+  constructor(baseURL = API_BASE) {
+    this.baseURL = baseURL
   }
 
   getToken() {
@@ -65,6 +66,7 @@ class ApiClient {
 }
 
 const api = new ApiClient()
+const reviewApi = new ApiClient(REVIEW_API_BASE)
 
 // ===== 认证 API =====
 export const authApi = {
@@ -111,6 +113,52 @@ export const settingsApi = {
 // ===== 仪表盘 API =====
 export const dashboardApi = {
   get: () => api.get('/dashboard'),
+}
+
+// ===== 商品评价 API =====
+export const productReviewApi = {
+  // 获取某商品的评价列表（支持按评分筛选）
+  list: (productId, { filter = 'all', page = 1, perPage = 10 } = {}) =>
+    reviewApi.get('/reviews', {
+      product_id: productId,
+      filter,
+      page,
+      per_page: perPage,
+    }),
+
+  // 获取商品综合评分
+  summary: (productId) => reviewApi.get(`/products/${productId}/summary`),
+
+  // 批量获取多个商品综合评分（用于商品列表）
+  summaryBatch: (ids = []) => {
+    if (!ids || ids.length === 0) return Promise.resolve({})
+    return reviewApi.get('/products/summary', { ids: ids.join(',') })
+  },
+
+  // 获取订单中可评价的商品
+  orderReviewable: (orderId) => reviewApi.get(`/orders/${orderId}/reviewable`),
+
+  // 创建评价
+  create: (data) => reviewApi.post('/reviews', data),
+
+  // 上传评价图片（FormData，调用 WordPress 媒体接口）
+  uploadImage: async (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const token = localStorage.getItem('token') || ''
+    const headers = {}
+    if (token) headers['Authorization'] = `Bearer ${token}`
+    const res = await fetch('/wp-json/pr/v1/upload', {
+      method: 'POST',
+      headers,
+      body: formData,
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: '上传失败' }))
+      throw new Error(err.message || `HTTP ${res.status}`)
+    }
+    return res.json()
+  },
 }
 
 export default api

@@ -47,6 +47,7 @@ fi
 
 # 激活自定义插件
 wp plugin activate cross-border-commerce --allow-root 2>/dev/null || true
+wp plugin activate product-reviews --allow-root 2>/dev/null || true
 
 # 检查是否已完成完整初始化（商品导入等）
 if [ ! -f "$INIT_DONE_FLAG" ]; then
