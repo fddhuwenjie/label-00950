@@ -18,6 +18,11 @@
     </div>
     <div class="product-info">
       <h3 class="product-name">{{ product.name }}</h3>
+      <div v-if="product.rating_count > 0" class="product-rating">
+        <StarRating :model-value="product.rating_avg" readonly size="small" />
+        <span class="rating-text">{{ product.rating_avg.toFixed(1) }}</span>
+        <span class="rating-count">({{ product.rating_count }})</span>
+      </div>
       <div class="product-price">
         <span class="current-price">${{ displayPrice }}</span>
         <span v-if="product.salePrice" class="original-price">
@@ -34,6 +39,7 @@ import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import toast from '@/utils/toast'
+import StarRating from './StarRating.vue'
 
 const props = defineProps({
   product: {
@@ -171,13 +177,31 @@ const handleAddToCart = () => {
   font-size: 15px;
   font-weight: 600;
   color: #1a1a1a;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 45px;
+}
+
+.product-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  
+  .rating-text {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f59e0b;
+  }
+  
+  .rating-count {
+    font-size: 12px;
+    color: #999;
+  }
 }
 
 .product-price {

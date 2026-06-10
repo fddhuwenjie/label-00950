@@ -45,7 +45,18 @@
                   <span class="item-qty">x{{ item.quantity }}</span>
                 </span>
               </div>
-              <span class="item-total">${{ (item.price * item.quantity).toFixed(2) }}</span>
+              <div class="item-actions">
+                <span class="item-total">${{ (item.price * item.quantity).toFixed(2) }}</span>
+                <button 
+                  v-if="order.status === 'completed'"
+                  class="btn-review"
+                  :class="{ reviewed: isItemReviewed(order.rawId, item.id) }"
+                  @click="openReviewForm(order, item)"
+                  :disabled="isItemReviewed(order.rawId, item.id)"
+                >
+                  {{ isItemReviewed(order.rawId, item.id) ? '已评价' : '评价晒单' }}
+                </button>
+              </div>
             </div>
           </div>
           
@@ -205,6 +216,15 @@
         </div>
       </div>
     </div>
+
+    <ReviewForm
+      :visible="showReviewForm"
+      :product="reviewProduct"
+      :order-id="reviewOrderId"
+      :order-item-id="reviewOrderItemId"
+      @close="showReviewForm = false"
+      @submitted="handleReviewSubmitted"
+    />
   </div>
 </template>
 
@@ -212,6 +232,8 @@
 import { ref, computed, onMounted } from 'vue'
 import toast from '@/utils/toast'
 import { orderApi } from '@/utils/api'
+import { useReviewStore } from '@/stores/reviews'
+import ReviewForm from '@/components/ReviewForm.vue'
 
 const activeTab = ref('all')
 const showDetailModal = ref(false)
@@ -220,6 +242,13 @@ const selectedOrder = ref(null)
 const payOrder = ref(null)
 const payMethod = ref('alipay')
 const loading = ref(false)
+
+const reviewStore = useReviewStore()
+const showReviewForm = ref(false)
+const reviewProduct = ref(null)
+const reviewOrderId = ref(null)
+const reviewOrderItemId = ref(null)
+const reviewedItemIds = ref(new Set())
 
 const tabs = [
   { id: 'all', label: '全部订单' },
@@ -252,18 +281,48 @@ const fetchOrders = async () => {
       },
       items: (o.items || []).map(item => ({
         id: item.id,
+        product_id: item.product_id,
         name: item.name,
         price: item.price,
         quantity: item.quantity,
         image: item.image || '',
       })),
     }))
+    
+    try {
+      const myReviews = await reviewStore.fetchMyReviews()
+      const reviewed = new Set()
+      myReviews.forEach(r => {
+        reviewed.add(`${r.order_id}_${r.order_item_id}`)
+      })
+      reviewedItemIds.value = reviewed
+    } catch (e) {
+      // 未登录可能会失败，忽略
+    }
   } catch (e) {
-    // 未登录或无订单
     orders.value = []
   } finally {
     loading.value = false
   }
+}
+
+const openReviewForm = (order, item) => {
+  reviewOrderId.value = order.rawId
+  reviewOrderItemId.value = item.id
+  reviewProduct.value = {
+    id: item.product_id,
+    name: item.name,
+    image: item.image
+  }
+  showReviewForm.value = true
+}
+
+const handleReviewSubmitted = () => {
+  fetchOrders()
+}
+
+const isItemReviewed = (orderRawId, itemId) => {
+  return reviewedItemIds.value.has(`${orderRawId}_${itemId}`)
 }
 
 const filteredOrders = computed(() => {
@@ -532,10 +591,40 @@ const confirmPay = async () => {
     }
   }
   
+  .item-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
   .item-total {
     font-size: 16px;
     font-weight: 600;
     color: #1a1a1a;
+  }
+
+  .btn-review {
+    padding: 6px 16px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border: none;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    &.reviewed, &:disabled {
+      background: #f0f0f0;
+      color: #999;
+      cursor: not-allowed;
+    }
   }
 }
 
@@ -999,8 +1088,11 @@ const confirmPay = async () => {
       width: 100%;
     }
     
-    .item-total {
-      align-self: flex-end;
+    .item-actions {
+      width: 100%;
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: center;
     }
   }
   
