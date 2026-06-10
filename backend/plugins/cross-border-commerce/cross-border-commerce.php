@@ -29,6 +29,7 @@ class Cross_Border_Commerce {
     private function __construct() {
         $this->includes();
         add_action('rest_api_init', array($this, 'register_routes'));
+        add_action('plugins_loaded', array($this, 'init_reviews'));
         // 允许 CORS（根据请求来源动态设置）
         add_action('rest_api_init', function() {
             remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
@@ -52,6 +53,11 @@ class Cross_Border_Commerce {
         }, 15);
     }
 
+    public function init_reviews() {
+        $reviews = CBC_Product_Reviews::get_instance();
+        $reviews->create_table();
+    }
+
     private function includes() {
         // 加载 Composer 依赖（firebase/php-jwt）
         $autoload = CBC_PLUGIN_DIR . 'vendor/autoload.php';
@@ -61,6 +67,7 @@ class Cross_Border_Commerce {
         require_once CBC_PLUGIN_DIR . 'includes/class-currency-converter.php';
         require_once CBC_PLUGIN_DIR . 'includes/class-duty-calculator.php';
         require_once CBC_PLUGIN_DIR . 'includes/class-shipping-calculator.php';
+        require_once CBC_PLUGIN_DIR . 'includes/class-product-reviews.php';
     }
 
     /**
@@ -239,6 +246,37 @@ class Cross_Border_Commerce {
             'methods' => 'DELETE',
             'callback' => array($this, 'delete_user'),
             'permission_callback' => array($this, 'check_admin_permission'),
+        ));
+
+        // ===== 商品评价 API =====
+        register_rest_route($namespace, '/products/(?P<id>\d+)/reviews', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_product_reviews'),
+            'permission_callback' => '__return_true',
+        ));
+
+        register_rest_route($namespace, '/products/(?P<id>\d+)/reviews/summary', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_product_review_summary'),
+            'permission_callback' => '__return_true',
+        ));
+
+        register_rest_route($namespace, '/reviews', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'create_review'),
+            'permission_callback' => array($this, 'check_user_permission'),
+        ));
+
+        register_rest_route($namespace, '/orders/(?P<id>\d+)/review-status', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_order_review_status'),
+            'permission_callback' => array($this, 'check_user_permission'),
+        ));
+
+        register_rest_route($namespace, '/upload/review-image', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'upload_review_image'),
+            'permission_callback' => array($this, 'check_user_permission'),
         ));
 
         // ===== 仪表盘 API =====
@@ -653,7 +691,35 @@ class Cross_Border_Commerce {
             'images' => is_array($images) ? $images : array(),
             'description' => $product->get_description(),
             'status' => $product->get_status(),
+            'averageRating' => $this->get_product_average_rating($product->get_id()),
+            'reviewCount' => $this->get_product_review_count($product->get_id()),
         );
+    }
+
+    private function get_product_average_rating($product_id) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cbc_product_reviews';
+        
+        $query = $wpdb->prepare(
+            "SELECT AVG(rating) FROM {$table_name} WHERE product_id = %d",
+            $product_id
+        );
+        $avg = $wpdb->get_var($query);
+        
+        return $avg ? round(floatval($avg), 1) : 0;
+    }
+
+    private function get_product_review_count($product_id) {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cbc_product_reviews';
+        
+        $query = $wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table_name} WHERE product_id = %d",
+            $product_id
+        );
+        $count = $wpdb->get_var($query);
+        
+        return intval($count);
     }
 
     // ===== 分类 =====
@@ -712,6 +778,7 @@ class Cross_Border_Commerce {
                 }
                 $items[] = array(
                     'id' => $item->get_id(),
+                    'product_id' => $product ? $product->get_id() : 0,
                     'name' => $item->get_name(),
                     'quantity' => $item->get_quantity(),
                     'price' => floatval($item->get_total()),
@@ -1134,6 +1201,156 @@ class Cross_Border_Commerce {
             'currency' => get_woocommerce_currency(),
             'sales_trend' => array('months' => $months, 'data' => $sales_data),
             'order_status' => $status_chart,
+        ));
+    }
+
+    // ===== 商品评价 =====
+    public function get_product_reviews($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
+
+        $product_id = intval($request['id']);
+        $product = wc_get_product($product_id);
+        if (!$product) {
+            return new WP_Error('not_found', '商品不存在', array('status' => 404));
+        }
+
+        $page = intval($request->get_param('page') ?: 1);
+        $per_page = intval($request->get_param('per_page') ?: 10);
+        $rating_filter = sanitize_text_field($request->get_param('rating_filter') ?: 'all');
+
+        $reviews_instance = CBC_Product_Reviews::get_instance();
+        $result = $reviews_instance->get_reviews($product_id, array(
+            'page' => $page,
+            'per_page' => $per_page,
+            'rating_filter' => $rating_filter,
+        ));
+
+        return rest_ensure_response($result);
+    }
+
+    public function get_product_review_summary($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
+
+        $product_id = intval($request['id']);
+        $product = wc_get_product($product_id);
+        if (!$product) {
+            return new WP_Error('not_found', '商品不存在', array('status' => 404));
+        }
+
+        $reviews_instance = CBC_Product_Reviews::get_instance();
+        $summary = $reviews_instance->get_review_summary($product_id);
+
+        return rest_ensure_response($summary);
+    }
+
+    public function create_review($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
+
+        $user = $this->get_user_from_token($request);
+        if (!$user) {
+            return new WP_Error('unauthorized', '请先登录', array('status' => 401));
+        }
+
+        $params = $request->get_json_params();
+
+        $product_id = intval($params['product_id'] ?? 0);
+        $order_id = intval($params['order_id'] ?? 0);
+        $order_item_id = intval($params['order_item_id'] ?? 0);
+        $rating = intval($params['rating'] ?? 0);
+        $comment = sanitize_textarea_field($params['comment'] ?? '');
+        $images = isset($params['images']) && is_array($params['images']) ? $params['images'] : array();
+
+        if (!$product_id || !$order_id || !$order_item_id) {
+            return new WP_Error('missing_params', '缺少必要参数', array('status' => 400));
+        }
+
+        if ($rating < 1 || $rating > 5) {
+            return new WP_Error('invalid_rating', '评分必须在1-5之间', array('status' => 400));
+        }
+
+        if (count($images) > 3) {
+            return new WP_Error('too_many_images', '最多上传3张图片', array('status' => 400));
+        }
+
+        $product = wc_get_product($product_id);
+        if (!$product) {
+            return new WP_Error('not_found', '商品不存在', array('status' => 404));
+        }
+
+        $reviews_instance = CBC_Product_Reviews::get_instance();
+        $result = $reviews_instance->add_review(
+            $user->ID,
+            $product_id,
+            $order_id,
+            $order_item_id,
+            $rating,
+            $comment,
+            $images
+        );
+
+        if (is_wp_error($result)) {
+            return $result;
+        }
+
+        return rest_ensure_response($result);
+    }
+
+    public function get_order_review_status($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
+
+        $user = $this->get_user_from_token($request);
+        if (!$user) {
+            return new WP_Error('unauthorized', '请先登录', array('status' => 401));
+        }
+
+        $order_id = intval($request['id']);
+        $reviews_instance = CBC_Product_Reviews::get_instance();
+        $reviewed_items = $reviews_instance->get_user_order_items_review_status($user->ID, $order_id);
+
+        return rest_ensure_response(array(
+            'order_id' => $order_id,
+            'reviewed_items' => $reviewed_items,
+        ));
+    }
+
+    public function upload_review_image($request) {
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/media.php');
+
+        $files = $request->get_file_params();
+        if (empty($files['file'])) {
+            return new WP_Error('no_file', '请选择文件', array('status' => 400));
+        }
+
+        $file = $files['file'];
+        $file_type = $file['type'] ?? '';
+        $allowed_types = array('image/jpeg', 'image/png', 'image/gif', 'image/webp');
+        if (!in_array($file_type, $allowed_types)) {
+            return new WP_Error('invalid_type', '只支持 JPG、PNG、GIF、WebP 格式的图片', array('status' => 400));
+        }
+
+        $file_size = $file['size'] ?? 0;
+        if ($file_size > 5 * 1024 * 1024) {
+            return new WP_Error('file_too_large', '图片大小不能超过5MB', array('status' => 400));
+        }
+
+        $_FILES['upload'] = $file;
+        $attachment_id = media_handle_upload('upload', 0);
+
+        if (is_wp_error($attachment_id)) {
+            return new WP_Error('upload_failed', $attachment_id->get_error_message(), array('status' => 500));
+        }
+
+        $url = wp_get_attachment_url($attachment_id);
+
+        return rest_ensure_response(array(
+            'id' => $attachment_id,
+            'url' => $url,
         ));
     }
 }

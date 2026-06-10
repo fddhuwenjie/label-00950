@@ -2,7 +2,9 @@
   <div class="legal-page">
     <div class="container">
       <h1>服务条款</h1>
-      <p class="update-date">最后更新日期：2025年1月1日</p>
+      <p class="update-date">
+        最后更新日期：2025年1月1日
+      </p>
       <section>
         <h2>1. 服务概述</h2>
         <p>欢迎使用跨境电商商城（以下简称"本平台"）。本平台为用户提供跨境商品浏览、购买、支付及物流追踪等服务。使用本平台即表示您同意遵守以下条款。</p>
@@ -40,7 +42,9 @@
         <p>本平台保留随时修改本条款的权利。修改后的条款将在平台上公布，继续使用本平台即视为接受修改后的条款。</p>
       </section>
       <div class="back-link">
-        <router-link to="/">返回首页</router-link>
+        <router-link to="/">
+          返回首页
+        </router-link>
       </div>
     </div>
   </div>

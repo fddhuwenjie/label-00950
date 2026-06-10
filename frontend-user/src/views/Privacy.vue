@@ -2,7 +2,9 @@
   <div class="legal-page">
     <div class="container">
       <h1>隐私政策</h1>
-      <p class="update-date">最后更新日期：2025年1月1日</p>
+      <p class="update-date">
+        最后更新日期：2025年1月1日
+      </p>
       <section>
         <h2>1. 信息收集</h2>
         <p>我们收集的信息包括：注册信息（用户名、邮箱、手机号）、订单信息（收货地址、支付信息）、浏览行为数据（访问页面、搜索记录）。我们仅收集提供服务所必需的最少信息。</p>
@@ -40,7 +42,9 @@
         <p>如对本隐私政策有任何疑问，请通过以下方式联系我们：邮箱 privacy@example.com，电话 +86 400-888-8888。</p>
       </section>
       <div class="back-link">
-        <router-link to="/">返回首页</router-link>
+        <router-link to="/">
+          返回首页
+        </router-link>
       </div>
     </div>
   </div>
