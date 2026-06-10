@@ -32,6 +32,12 @@
         <div class="product-info">
           <h1 class="product-name">{{ product.name }}</h1>
           
+          <div v-if="product.rating_count > 0" class="product-rating">
+            <StarRating :model-value="product.rating_avg" readonly size="small" show-half />
+            <span class="rating-score">{{ product.rating_avg.toFixed(1) }}</span>
+            <span class="rating-count">({{ product.rating_count }}条评价)</span>
+          </div>
+          
           <div class="product-price">
             <span class="current-price">${{ displayPrice }}</span>
             <span v-if="product.salePrice" class="original-price">${{ product.price.toFixed(2) }}</span>
@@ -104,6 +110,18 @@
       <div v-else class="loading">
         <p>加载中...</p>
       </div>
+      
+      <ProductReviews 
+        v-if="product" 
+        :product-id="product.id"
+        :initial-stats="{
+          avg_rating: product.rating_avg || 0,
+          total: product.rating_count || 0,
+          positive: 0,
+          neutral: 0,
+          negative: 0
+        }"
+      />
     </div>
   </div>
 </template>
@@ -115,6 +133,8 @@ import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import toast from '@/utils/toast'
 import { productApi } from '@/utils/api'
+import StarRating from '@/components/StarRating.vue'
+import ProductReviews from '@/components/ProductReviews.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -285,8 +305,26 @@ onMounted(async () => {
     font-size: 28px;
     font-weight: 700;
     color: #1a1a1a;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     line-height: 1.4;
+  }
+  
+  .product-rating {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    
+    .rating-score {
+      font-size: 16px;
+      font-weight: 700;
+      color: #f59e0b;
+    }
+    
+    .rating-count {
+      font-size: 14px;
+      color: #999;
+    }
   }
   
   .product-price {

@@ -16,6 +16,33 @@ if (!defined('ABSPATH')) exit;
 define('CBC_VERSION', '1.0.0');
 define('CBC_PLUGIN_DIR', plugin_dir_path(__FILE__));
 
+register_activation_hook(__FILE__, function() {
+    global $wpdb;
+    $table_name = $wpdb->prefix . 'cbc_product_reviews';
+    $charset_collate = $wpdb->get_charset_collate();
+    
+    $sql = "CREATE TABLE IF NOT EXISTS $table_name (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        product_id bigint(20) NOT NULL,
+        order_id bigint(20) NOT NULL,
+        order_item_id bigint(20) NOT NULL,
+        user_id bigint(20) NOT NULL,
+        rating tinyint(1) NOT NULL DEFAULT 5,
+        content text NOT NULL,
+        images longtext,
+        created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY product_id (product_id),
+        KEY user_id (user_id),
+        KEY order_item (order_id, order_item_id),
+        UNIQUE KEY unique_review (order_id, order_item_id, user_id)
+    ) $charset_collate;";
+    
+    require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+    dbDelta($sql);
+});
+
 class Cross_Border_Commerce {
     private static $instance = null;
 
@@ -29,6 +56,7 @@ class Cross_Border_Commerce {
     private function __construct() {
         $this->includes();
         add_action('rest_api_init', array($this, 'register_routes'));
+        add_action('init', array($this, 'maybe_create_tables'));
         // 允许 CORS（根据请求来源动态设置）
         add_action('rest_api_init', function() {
             remove_filter('rest_pre_serve_request', 'rest_send_cors_headers');
@@ -61,6 +89,35 @@ class Cross_Border_Commerce {
         require_once CBC_PLUGIN_DIR . 'includes/class-currency-converter.php';
         require_once CBC_PLUGIN_DIR . 'includes/class-duty-calculator.php';
         require_once CBC_PLUGIN_DIR . 'includes/class-shipping-calculator.php';
+    }
+
+    public function maybe_create_tables() {
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cbc_product_reviews';
+        
+        if ($wpdb->get_var("SHOW TABLES LIKE '$table_name'") != $table_name) {
+            $charset_collate = $wpdb->get_charset_collate();
+            $sql = "CREATE TABLE $table_name (
+                id bigint(20) NOT NULL AUTO_INCREMENT,
+                product_id bigint(20) NOT NULL,
+                order_id bigint(20) NOT NULL,
+                order_item_id bigint(20) NOT NULL,
+                user_id bigint(20) NOT NULL,
+                rating tinyint(1) NOT NULL DEFAULT 5,
+                content text NOT NULL,
+                images longtext,
+                created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (id),
+                KEY product_id (product_id),
+                KEY user_id (user_id),
+                KEY order_item (order_id, order_item_id),
+                UNIQUE KEY unique_review (order_id, order_item_id, user_id)
+            ) $charset_collate;";
+            
+            require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
+            dbDelta($sql);
+        }
     }
 
     /**
@@ -246,6 +303,49 @@ class Cross_Border_Commerce {
             'methods' => 'GET',
             'callback' => array($this, 'get_dashboard'),
             'permission_callback' => array($this, 'check_admin_permission'),
+        ));
+
+        // ===== 商品评价 API =====
+        register_rest_route($namespace, '/products/(?P<id>\d+)/reviews', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_product_reviews'),
+            'permission_callback' => '__return_true',
+        ));
+
+        register_rest_route($namespace, '/reviews/(?P<id>\d+)', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_review'),
+            'permission_callback' => '__return_true',
+        ));
+
+        register_rest_route($namespace, '/reviews', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'create_review'),
+            'permission_callback' => array($this, 'check_user_permission'),
+        ));
+
+        register_rest_route($namespace, '/reviews/(?P<id>\d+)', array(
+            'methods' => 'PUT',
+            'callback' => array($this, 'update_review'),
+            'permission_callback' => array($this, 'check_user_permission'),
+        ));
+
+        register_rest_route($namespace, '/reviews/(?P<id>\d+)', array(
+            'methods' => 'DELETE',
+            'callback' => array($this, 'delete_review'),
+            'permission_callback' => array($this, 'check_user_permission'),
+        ));
+
+        register_rest_route($namespace, '/reviews/user/me', array(
+            'methods' => 'GET',
+            'callback' => array($this, 'get_my_reviews'),
+            'permission_callback' => array($this, 'check_user_permission'),
+        ));
+
+        register_rest_route($namespace, '/reviews/upload', array(
+            'methods' => 'POST',
+            'callback' => array($this, 'upload_review_image'),
+            'permission_callback' => array($this, 'check_user_permission'),
         ));
     }
 
@@ -626,11 +726,9 @@ class Cross_Border_Commerce {
             $categorySlug = $cat_terms[0]->slug;
         }
 
-        // 获取图片
         $image = $product->get_meta('_external_image');
         $images = $product->get_meta('_external_images');
 
-        // 如果没有外部图片，尝试获取 WooCommerce 图片
         if (empty($image)) {
             $image_id = $product->get_image_id();
             $image = $image_id ? wp_get_attachment_url($image_id) : '';
@@ -639,6 +737,15 @@ class Cross_Border_Commerce {
             $gallery_ids = $product->get_gallery_image_ids();
             $images = array_map('wp_get_attachment_url', $gallery_ids);
         }
+
+        global $wpdb;
+        $table_name = $wpdb->prefix . 'cbc_product_reviews';
+        $product_id = $product->get_id();
+
+        $stats = $wpdb->get_row($wpdb->prepare(
+            "SELECT COUNT(*) as count, AVG(rating) as avg_rating FROM $table_name WHERE product_id = %d",
+            $product_id
+        ));
 
         return array(
             'id' => $product->get_id(),
@@ -653,6 +760,8 @@ class Cross_Border_Commerce {
             'images' => is_array($images) ? $images : array(),
             'description' => $product->get_description(),
             'status' => $product->get_status(),
+            'rating_avg' => $stats->avg_rating ? round(floatval($stats->avg_rating), 1) : 0,
+            'rating_count' => intval($stats->count),
         );
     }
 
@@ -703,6 +812,7 @@ class Cross_Border_Commerce {
             foreach ($order->get_items() as $item) {
                 $product = $item->get_product();
                 $image = '';
+                $product_id = $product ? $product->get_id() : 0;
                 if ($product) {
                     $image = $product->get_meta('_external_image');
                     if (empty($image)) {
@@ -712,6 +822,7 @@ class Cross_Border_Commerce {
                 }
                 $items[] = array(
                     'id' => $item->get_id(),
+                    'product_id' => $product_id,
                     'name' => $item->get_name(),
                     'quantity' => $item->get_quantity(),
                     'price' => floatval($item->get_total()),
@@ -1134,6 +1245,314 @@ class Cross_Border_Commerce {
             'currency' => get_woocommerce_currency(),
             'sales_trend' => array('months' => $months, 'data' => $sales_data),
             'order_status' => $status_chart,
+        ));
+    }
+
+    // ===== 商品评价 API =====
+    public function get_product_reviews($request) {
+        global $wpdb;
+        $product_id = intval($request['id']);
+        $rating_filter = $request->get_param('rating');
+        $per_page = intval($request->get_param('per_page') ?: 20);
+        $page = intval($request->get_param('page') ?: 1);
+        $offset = ($page - 1) * $per_page;
+
+        $table_name = $wpdb->prefix . 'cbc_product_reviews';
+        $where = $wpdb->prepare('WHERE product_id = %d', $product_id);
+
+        if ($rating_filter === 'positive') {
+            $where .= ' AND rating = 5';
+        } elseif ($rating_filter === 'neutral') {
+            $where .= ' AND rating BETWEEN 3 AND 4';
+        } elseif ($rating_filter === 'negative') {
+            $where .= ' AND rating BETWEEN 1 AND 2';
+        }
+
+        $total = $wpdb->get_var("SELECT COUNT(*) FROM $table_name $where");
+        $reviews = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $table_name $where ORDER BY created_at DESC LIMIT %d OFFSET %d",
+            $per_page,
+            $offset
+        ));
+
+        $data = array();
+        foreach ($reviews as $review) {
+            $user = get_user_by('ID', $review->user_id);
+            $data[] = array(
+                'id' => intval($review->id),
+                'product_id' => intval($review->product_id),
+                'user_id' => intval($review->user_id),
+                'user_name' => $user ? $user->display_name : '匿名用户',
+                'rating' => intval($review->rating),
+                'content' => $review->content,
+                'images' => $review->images ? json_decode($review->images, true) : array(),
+                'created_at' => $review->created_at,
+            );
+        }
+
+        $stats = $wpdb->get_row($wpdb->prepare(
+            "SELECT COUNT(*) as total,
+                    AVG(rating) as avg_rating,
+                    SUM(CASE WHEN rating = 5 THEN 1 ELSE 0 END) as positive,
+                    SUM(CASE WHEN rating BETWEEN 3 AND 4 THEN 1 ELSE 0 END) as neutral,
+                    SUM(CASE WHEN rating BETWEEN 1 AND 2 THEN 1 ELSE 0 END) as negative
+             FROM $table_name WHERE product_id = %d",
+            $product_id
+        ));
+
+        return rest_ensure_response(array(
+            'data' => $data,
+            'total' => intval($total),
+            'page' => $page,
+            'per_page' => $per_page,
+            'stats' => array(
+                'avg_rating' => $stats->avg_rating ? round(floatval($stats->avg_rating), 1) : 0,
+                'total' => intval($stats->total),
+                'positive' => intval($stats->positive),
+                'neutral' => intval($stats->neutral),
+                'negative' => intval($stats->negative),
+            ),
+        ));
+    }
+
+    public function get_review($request) {
+        global $wpdb;
+        $id = intval($request['id']);
+        $table_name = $wpdb->prefix . 'cbc_product_reviews';
+        $review = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id));
+
+        if (!$review) {
+            return new WP_Error('not_found', '评价不存在', array('status' => 404));
+        }
+
+        $user = get_user_by('ID', $review->user_id);
+        return rest_ensure_response(array(
+            'id' => intval($review->id),
+            'product_id' => intval($review->product_id),
+            'order_id' => intval($review->order_id),
+            'user_id' => intval($review->user_id),
+            'user_name' => $user ? $user->display_name : '匿名用户',
+            'rating' => intval($review->rating),
+            'content' => $review->content,
+            'images' => $review->images ? json_decode($review->images, true) : array(),
+            'created_at' => $review->created_at,
+        ));
+    }
+
+    public function create_review($request) {
+        $wc_check = $this->ensure_wc_loaded();
+        if (is_wp_error($wc_check)) return $wc_check;
+        global $wpdb;
+
+        $user = $this->get_user_from_token($request);
+        if (!$user) return new WP_Error('unauthorized', '未授权', array('status' => 401));
+
+        $params = $request->get_json_params();
+        $product_id = intval($params['product_id'] ?? 0);
+        $order_id = intval($params['order_id'] ?? 0);
+        $order_item_id = intval($params['order_item_id'] ?? 0);
+        $rating = intval($params['rating'] ?? 5);
+        $content = sanitize_textarea_field($params['content'] ?? '');
+        $images = isset($params['images']) && is_array($params['images']) ? array_slice($params['images'], 0, 3) : array();
+
+        if ($product_id <= 0 || $order_id <= 0 || $order_item_id <= 0) {
+            return new WP_Error('invalid_params', '参数不完整', array('status' => 400));
+        }
+        if ($rating < 1 || $rating > 5) {
+            return new WP_Error('invalid_params', '评分必须在1-5之间', array('status' => 400));
+        }
+        if (empty(trim($content))) {
+            return new WP_Error('invalid_params', '评价内容不能为空', array('status' => 400));
+        }
+
+        $order = wc_get_order($order_id);
+        if (!$order || $order->get_customer_id() !== $user->ID) {
+            return new WP_Error('forbidden', '无权评价此订单', array('status' => 403));
+        }
+        if ($order->get_status() !== 'completed') {
+            return new WP_Error('invalid_order', '订单完成后才能评价', array('status' => 400));
+        }
+
+        $product = wc_get_product($product_id);
+        if (!$product) {
+            return new WP_Error('not_found', '商品不存在', array('status' => 404));
+        }
+
+        $table_name = $wpdb->prefix . 'cbc_product_reviews';
+        $existing = $wpdb->get_var($wpdb->prepare(
+            "SELECT id FROM $table_name WHERE order_id = %d AND order_item_id = %d AND user_id = %d",
+            $order_id, $order_item_id, $user->ID
+        ));
+        if ($existing) {
+            return new WP_Error('already_reviewed', '您已经评价过该商品了', array('status' => 409));
+        }
+
+        $result = $wpdb->insert(
+            $table_name,
+            array(
+                'product_id' => $product_id,
+                'order_id' => $order_id,
+                'order_item_id' => $order_item_id,
+                'user_id' => $user->ID,
+                'rating' => $rating,
+                'content' => $content,
+                'images' => json_encode($images),
+            ),
+            array('%d', '%d', '%d', '%d', '%d', '%s', '%s')
+        );
+
+        if ($result === false) {
+            return new WP_Error('db_error', '评价保存失败', array('status' => 500));
+        }
+
+        $review_id = $wpdb->insert_id;
+        return rest_ensure_response(array(
+            'id' => $review_id,
+            'message' => '评价成功',
+        ));
+    }
+
+    public function update_review($request) {
+        global $wpdb;
+        $user = $this->get_user_from_token($request);
+        if (!$user) return new WP_Error('unauthorized', '未授权', array('status' => 401));
+
+        $id = intval($request['id']);
+        $params = $request->get_json_params();
+
+        $table_name = $wpdb->prefix . 'cbc_product_reviews';
+        $review = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id));
+        if (!$review) {
+            return new WP_Error('not_found', '评价不存在', array('status' => 404));
+        }
+        if (intval($review->user_id) !== $user->ID && !user_can($user, 'manage_options')) {
+            return new WP_Error('forbidden', '无权修改此评价', array('status' => 403));
+        }
+
+        $update = array();
+        $format = array();
+        if (isset($params['rating'])) {
+            $rating = intval($params['rating']);
+            if ($rating < 1 || $rating > 5) {
+                return new WP_Error('invalid_params', '评分必须在1-5之间', array('status' => 400));
+            }
+            $update['rating'] = $rating;
+            $format[] = '%d';
+        }
+        if (isset($params['content'])) {
+            $content = sanitize_textarea_field($params['content']);
+            if (empty(trim($content))) {
+                return new WP_Error('invalid_params', '评价内容不能为空', array('status' => 400));
+            }
+            $update['content'] = $content;
+            $format[] = '%s';
+        }
+        if (isset($params['images']) && is_array($params['images'])) {
+            $update['images'] = json_encode(array_slice($params['images'], 0, 3));
+            $format[] = '%s';
+        }
+
+        if (empty($update)) {
+            return new WP_Error('invalid_params', '没有要更新的数据', array('status' => 400));
+        }
+
+        $wpdb->update($table_name, $update, array('id' => $id), $format, array('%d'));
+        return rest_ensure_response(array('message' => '评价已更新', 'id' => $id));
+    }
+
+    public function delete_review($request) {
+        global $wpdb;
+        $user = $this->get_user_from_token($request);
+        if (!$user) return new WP_Error('unauthorized', '未授权', array('status' => 401));
+
+        $id = intval($request['id']);
+        $table_name = $wpdb->prefix . 'cbc_product_reviews';
+        $review = $wpdb->get_row($wpdb->prepare("SELECT * FROM $table_name WHERE id = %d", $id));
+        if (!$review) {
+            return new WP_Error('not_found', '评价不存在', array('status' => 404));
+        }
+        if (intval($review->user_id) !== $user->ID && !user_can($user, 'manage_options')) {
+            return new WP_Error('forbidden', '无权删除此评价', array('status' => 403));
+        }
+
+        $wpdb->delete($table_name, array('id' => $id), array('%d'));
+        return rest_ensure_response(array('deleted' => true, 'id' => $id));
+    }
+
+    public function get_my_reviews($request) {
+        global $wpdb;
+        $user = $this->get_user_from_token($request);
+        if (!$user) return new WP_Error('unauthorized', '未授权', array('status' => 401));
+
+        $table_name = $wpdb->prefix . 'cbc_product_reviews';
+        $reviews = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM $table_name WHERE user_id = %d ORDER BY created_at DESC",
+            $user->ID
+        ));
+
+        $data = array();
+        foreach ($reviews as $review) {
+            $product = wc_get_product($review->product_id);
+            $product_name = $product ? $product->get_name() : '';
+            $product_image = '';
+            if ($product) {
+                $product_image = $product->get_meta('_external_image');
+                if (empty($product_image)) {
+                    $image_id = $product->get_image_id();
+                    $product_image = $image_id ? wp_get_attachment_url($image_id) : '';
+                }
+            }
+            $data[] = array(
+                'id' => intval($review->id),
+                'product_id' => intval($review->product_id),
+                'product_name' => $product_name,
+                'product_image' => $product_image,
+                'order_id' => intval($review->order_id),
+                'order_item_id' => intval($review->order_item_id),
+                'rating' => intval($review->rating),
+                'content' => $review->content,
+                'images' => $review->images ? json_decode($review->images, true) : array(),
+                'created_at' => $review->created_at,
+            );
+        }
+
+        return rest_ensure_response($data);
+    }
+
+    public function upload_review_image($request) {
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        require_once(ABSPATH . 'wp-admin/includes/file.php');
+        require_once(ABSPATH . 'wp-admin/includes/media.php');
+
+        $user = $this->get_user_from_token($request);
+        if (!$user) return new WP_Error('unauthorized', '未授权', array('status' => 401));
+
+        $files = $request->get_file_params();
+        if (empty($files['file'])) {
+            return new WP_Error('no_file', '请选择文件', array('status' => 400));
+        }
+
+        if ($files['file']['size'] > 5 * 1024 * 1024) {
+            return new WP_Error('file_too_large', '图片大小不能超过5MB', array('status' => 400));
+        }
+
+        $allowed_types = array('image/jpeg', 'image/png', 'image/gif', 'image/webp');
+        if (!in_array($files['file']['type'], $allowed_types)) {
+            return new WP_Error('invalid_type', '只支持 JPG、PNG、GIF、WebP 格式', array('status' => 400));
+        }
+
+        $_FILES['upload'] = $files['file'];
+        $attachment_id = media_handle_upload('upload', 0);
+
+        if (is_wp_error($attachment_id)) {
+            return new WP_Error('upload_failed', $attachment_id->get_error_message(), array('status' => 500));
+        }
+
+        $url = wp_get_attachment_url($attachment_id);
+
+        return rest_ensure_response(array(
+            'id' => $attachment_id,
+            'url' => $url,
         ));
     }
 }

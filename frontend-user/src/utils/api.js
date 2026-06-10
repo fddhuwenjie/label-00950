@@ -16,13 +16,16 @@ class ApiClient {
 
   async request(method, path, data = null, options = {}) {
     const url = this.baseURL + path
-    const headers = {
-      'Content-Type': 'application/json',
-    }
+    const headers = {}
 
     const token = this.getToken()
     if (token) {
       headers['Authorization'] = `Bearer ${token}`
+    }
+
+    const isFormData = data instanceof FormData
+    if (!isFormData) {
+      headers['Content-Type'] = 'application/json'
     }
 
     const config = {
@@ -32,7 +35,7 @@ class ApiClient {
     }
 
     if (data && (method === 'POST' || method === 'PUT')) {
-      config.body = JSON.stringify(data)
+      config.body = isFormData ? data : JSON.stringify(data)
     }
 
     const response = await fetch(url, config)
@@ -111,6 +114,21 @@ export const settingsApi = {
 // ===== 仪表盘 API =====
 export const dashboardApi = {
   get: () => api.get('/dashboard'),
+}
+
+// ===== 评价 API =====
+export const reviewApi = {
+  getByProduct: (productId, params = {}) => api.get(`/products/${productId}/reviews`, params),
+  getById: (id) => api.get(`/reviews/${id}`),
+  create: (data) => api.post('/reviews', data),
+  update: (id, data) => api.put(`/reviews/${id}`, data),
+  delete: (id) => api.delete(`/reviews/${id}`),
+  getMyReviews: () => api.get('/reviews/user/me'),
+  uploadImage: (file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.request('POST', '/reviews/upload', formData)
+  },
 }
 
 export default api
