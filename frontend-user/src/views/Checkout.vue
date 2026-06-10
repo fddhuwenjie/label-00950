@@ -1,7 +1,9 @@
 <template>
   <div class="checkout-page">
     <div class="container">
-      <h1 class="page-title">结算</h1>
+      <h1 class="page-title">
+        结算
+      </h1>
       
       <div class="checkout-content">
         <div class="checkout-form">
@@ -9,65 +11,118 @@
           <section class="form-section">
             <h2>收货地址</h2>
             <div class="form-grid">
-              <div class="form-group" :class="{ error: errors.name }">
+              <div
+                class="form-group"
+                :class="{ error: errors.name }"
+              >
                 <label>收货人姓名 *</label>
                 <input 
-                  type="text" 
                   v-model="form.name" 
+                  type="text" 
                   placeholder="请输入姓名"
                   @blur="validateField('name')"
-                />
-                <span v-if="errors.name" class="error-msg">{{ errors.name }}</span>
+                >
+                <span
+                  v-if="errors.name"
+                  class="error-msg"
+                >{{ errors.name }}</span>
               </div>
-              <div class="form-group" :class="{ error: errors.phone }">
+              <div
+                class="form-group"
+                :class="{ error: errors.phone }"
+              >
                 <label>联系电话 *</label>
                 <input 
-                  type="tel" 
                   v-model="form.phone" 
+                  type="tel" 
                   placeholder="请输入电话"
                   @blur="validateField('phone')"
-                />
-                <span v-if="errors.phone" class="error-msg">{{ errors.phone }}</span>
+                >
+                <span
+                  v-if="errors.phone"
+                  class="error-msg"
+                >{{ errors.phone }}</span>
               </div>
-              <div class="form-group" :class="{ error: errors.email }">
+              <div
+                class="form-group"
+                :class="{ error: errors.email }"
+              >
                 <label>电子邮箱 *</label>
                 <input 
-                  type="email" 
                   v-model="form.email" 
+                  type="email" 
                   placeholder="请输入邮箱"
                   @blur="validateField('email')"
-                />
-                <span v-if="errors.email" class="error-msg">{{ errors.email }}</span>
+                >
+                <span
+                  v-if="errors.email"
+                  class="error-msg"
+                >{{ errors.email }}</span>
               </div>
-              <div class="form-group" :class="{ error: errors.country }">
+              <div
+                class="form-group"
+                :class="{ error: errors.country }"
+              >
                 <label>国家/地区 *</label>
-                <select v-model="form.country" @change="validateField('country')">
-                  <option value="">请选择</option>
-                  <option value="CN">中国</option>
-                  <option value="US">美国</option>
-                  <option value="UK">英国</option>
-                  <option value="JP">日本</option>
-                  <option value="AU">澳大利亚</option>
+                <select
+                  v-model="form.country"
+                  @change="validateField('country')"
+                >
+                  <option value="">
+                    请选择
+                  </option>
+                  <option value="CN">
+                    中国
+                  </option>
+                  <option value="US">
+                    美国
+                  </option>
+                  <option value="UK">
+                    英国
+                  </option>
+                  <option value="JP">
+                    日本
+                  </option>
+                  <option value="AU">
+                    澳大利亚
+                  </option>
                 </select>
-                <span v-if="errors.country" class="error-msg">{{ errors.country }}</span>
+                <span
+                  v-if="errors.country"
+                  class="error-msg"
+                >{{ errors.country }}</span>
               </div>
-              <div class="form-group full-width" :class="{ error: errors.address }">
+              <div
+                class="form-group full-width"
+                :class="{ error: errors.address }"
+              >
                 <label>详细地址 *</label>
                 <input 
-                  type="text" 
                   v-model="form.address" 
+                  type="text" 
                   placeholder="请输入详细地址"
                   @blur="validateField('address')"
-                />
-                <span v-if="errors.address" class="error-msg">{{ errors.address }}</span>
+                >
+                <span
+                  v-if="errors.address"
+                  class="error-msg"
+                >{{ errors.address }}</span>
               </div>
               <div class="form-group">
                 <label>城市</label>
-                <input type="text" v-model="form.city" placeholder="请输入城市" />
+                <input
+                  v-model="form.city"
+                  type="text"
+                  placeholder="请输入城市"
+                >
               </div>
               <div class="form-group">
                 <label>邮政编码</label>
-                <input type="text" v-model="form.zipCode" placeholder="请输入邮编" />
+                <input
+                  v-model="form.zipCode"
+                  type="text"
+                  placeholder="请输入邮编"
+                >
               </div>
             </div>
           </section>
@@ -76,16 +131,30 @@
           <section class="form-section">
             <h2>配送方式</h2>
             <div class="shipping-options">
-              <label class="shipping-option" :class="{ active: form.shippingMethod === 'standard' }">
-                <input type="radio" v-model="form.shippingMethod" value="standard" />
+              <label
+                class="shipping-option"
+                :class="{ active: form.shippingMethod === 'standard' }"
+              >
+                <input
+                  v-model="form.shippingMethod"
+                  type="radio"
+                  value="standard"
+                >
                 <div class="option-content">
                   <span class="option-name">标准物流</span>
                   <span class="option-time">{{ shippingSettings.estimatedDelivery }}</span>
                 </div>
                 <span class="option-price">${{ shippingSettings.defaultShippingFee }}</span>
               </label>
-              <label class="shipping-option" :class="{ active: form.shippingMethod === 'express' }">
-                <input type="radio" v-model="form.shippingMethod" value="express" />
+              <label
+                class="shipping-option"
+                :class="{ active: form.shippingMethod === 'express' }"
+              >
+                <input
+                  v-model="form.shippingMethod"
+                  type="radio"
+                  value="express"
+                >
                 <div class="option-content">
                   <span class="option-name">国际快递</span>
                   <span class="option-time">3-5 个工作日</span>
@@ -99,12 +168,26 @@
           <section class="form-section">
             <h2>支付方式</h2>
             <div class="payment-options">
-              <label class="payment-option" :class="{ active: form.paymentMethod === 'paypal' }">
-                <input type="radio" v-model="form.paymentMethod" value="paypal" />
+              <label
+                class="payment-option"
+                :class="{ active: form.paymentMethod === 'paypal' }"
+              >
+                <input
+                  v-model="form.paymentMethod"
+                  type="radio"
+                  value="paypal"
+                >
                 <span class="option-name">PayPal</span>
               </label>
-              <label class="payment-option" :class="{ active: form.paymentMethod === 'card' }">
-                <input type="radio" v-model="form.paymentMethod" value="card" />
+              <label
+                class="payment-option"
+                :class="{ active: form.paymentMethod === 'card' }"
+              >
+                <input
+                  v-model="form.paymentMethod"
+                  type="radio"
+                  value="card"
+                >
                 <span class="option-name">信用卡/借记卡</span>
               </label>
             </div>
@@ -116,8 +199,15 @@
           <h2>订单摘要</h2>
           
           <div class="order-items">
-            <div v-for="item in cartStore.items" :key="item.id" class="order-item">
-              <img :src="item.image" :alt="item.name" />
+            <div
+              v-for="item in cartStore.items"
+              :key="item.id"
+              class="order-item"
+            >
+              <img
+                :src="item.image"
+                :alt="item.name"
+              >
               <div class="item-info">
                 <span class="item-name">{{ item.name }}</span>
                 <span class="item-qty">x{{ item.quantity }}</span>
@@ -141,13 +231,23 @@
             </div>
           </div>
           
-          <button class="place-order-btn" @click="placeOrder" :disabled="submitting">
+          <button
+            class="place-order-btn"
+            :disabled="submitting"
+            @click="placeOrder"
+          >
             {{ submitting ? '提交中...' : '提交订单' }}
           </button>
           
           <p class="terms">
             点击"提交订单"即表示您同意我们的
-            <a href="/terms" target="_blank">服务条款</a> 和 <a href="/privacy" target="_blank">隐私政策</a>
+            <a
+              href="/terms"
+              target="_blank"
+            >服务条款</a> 和 <a
+              href="/privacy"
+              target="_blank"
+            >隐私政策</a>
           </p>
         </div>
       </div>
@@ -155,14 +255,41 @@
   </div>
   
   <!-- 支付弹窗 -->
-  <div v-if="showPayModal" class="modal-overlay" @click="closePayModal">
-    <div class="modal-content pay-modal" @click.stop>
+  <div
+    v-if="showPayModal"
+    class="modal-overlay"
+    @click="closePayModal"
+  >
+    <div
+      class="modal-content pay-modal"
+      @click.stop
+    >
       <div class="modal-header">
         <h3>确认支付</h3>
-        <button class="close-btn" @click="closePayModal">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
+        <button
+          class="close-btn"
+          @click="closePayModal"
+        >
+          <svg
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <line
+              x1="18"
+              y1="6"
+              x2="6"
+              y2="18"
+            />
+            <line
+              x1="6"
+              y1="6"
+              x2="18"
+              y2="18"
+            />
           </svg>
         </button>
       </div>
@@ -174,8 +301,15 @@
         </div>
         
         <div class="pay-methods">
-          <label class="pay-method" :class="{ active: payMethod === 'alipay' }">
-            <input type="radio" v-model="payMethod" value="alipay" />
+          <label
+            class="pay-method"
+            :class="{ active: payMethod === 'alipay' }"
+          >
+            <input
+              v-model="payMethod"
+              type="radio"
+              value="alipay"
+            >
             <span class="method-icon alipay">
               <span class="icon-text">支</span>
             </span>
@@ -184,8 +318,15 @@
               <span class="method-desc">Alipay</span>
             </div>
           </label>
-          <label class="pay-method" :class="{ active: payMethod === 'wechat' }">
-            <input type="radio" v-model="payMethod" value="wechat" />
+          <label
+            class="pay-method"
+            :class="{ active: payMethod === 'wechat' }"
+          >
+            <input
+              v-model="payMethod"
+              type="radio"
+              value="wechat"
+            >
             <span class="method-icon wechat">
               <span class="icon-text">微</span>
             </span>
@@ -194,8 +335,15 @@
               <span class="method-desc">WeChat Pay</span>
             </div>
           </label>
-          <label class="pay-method" :class="{ active: payMethod === 'paypal' }">
-            <input type="radio" v-model="payMethod" value="paypal" />
+          <label
+            class="pay-method"
+            :class="{ active: payMethod === 'paypal' }"
+          >
+            <input
+              v-model="payMethod"
+              type="radio"
+              value="paypal"
+            >
             <span class="method-icon paypal">
               <span class="icon-text">P</span>
             </span>
@@ -206,11 +354,18 @@
           </label>
         </div>
         
-        <button class="pay-submit-btn" @click="confirmPay" :disabled="paying">
+        <button
+          class="pay-submit-btn"
+          :disabled="paying"
+          @click="confirmPay"
+        >
           {{ paying ? '支付中...' : '确认支付' }}
         </button>
         
-        <button class="pay-later-btn" @click="payLater">
+        <button
+          class="pay-later-btn"
+          @click="payLater"
+        >
           稍后支付
         </button>
       </div>

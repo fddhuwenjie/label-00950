@@ -3,21 +3,37 @@
     <div class="container">
       <div class="help-header">
         <h1>{{ pageTitle }}</h1>
-        <p class="subtitle">{{ pageSubtitle }}</p>
+        <p class="subtitle">
+          {{ pageSubtitle }}
+        </p>
       </div>
       
       <div class="help-content">
         <!-- 帮助中心首页 -->
-        <div v-if="!topic" class="help-grid">
-          <router-link v-for="item in helpTopics" :key="item.path" :to="item.path" class="help-card">
-            <div class="help-icon" v-html="item.icon"></div>
+        <div
+          v-if="!topic"
+          class="help-grid"
+        >
+          <router-link
+            v-for="item in helpTopics"
+            :key="item.path"
+            :to="item.path"
+            class="help-card"
+          >
+            <div
+              class="help-icon"
+              v-html="item.icon"
+            />
             <h3>{{ item.title }}</h3>
             <p>{{ item.description }}</p>
           </router-link>
         </div>
         
         <!-- 退换货政策 -->
-        <div v-else-if="topic === 'returns'" class="help-article">
+        <div
+          v-else-if="topic === 'returns'"
+          class="help-article"
+        >
           <h2>退换货政策</h2>
           <div class="article-section">
             <h3>退货条件</h3>
@@ -49,7 +65,10 @@
         </div>
         
         <!-- 配送说明 -->
-        <div v-else-if="topic === 'shipping'" class="help-article">
+        <div
+          v-else-if="topic === 'shipping'"
+          class="help-article"
+        >
           <h2>配送说明</h2>
           <div class="article-section">
             <h3>配送范围</h3>
@@ -80,7 +99,10 @@
         </div>
         
         <!-- 支付方式 -->
-        <div v-else-if="topic === 'payment'" class="help-article">
+        <div
+          v-else-if="topic === 'payment'"
+          class="help-article"
+        >
           <h2>支付方式</h2>
           <div class="article-section">
             <h3>支持的支付方式</h3>
@@ -100,7 +122,10 @@
         </div>
         
         <!-- 新手指南 -->
-        <div v-else-if="topic === 'guide'" class="help-article">
+        <div
+          v-else-if="topic === 'guide'"
+          class="help-article"
+        >
           <h2>新手指南</h2>
           <div class="article-section">
             <h3>如何购物</h3>
@@ -124,7 +149,10 @@
         </div>
         
         <!-- 关税说明 -->
-        <div v-else-if="topic === 'duty'" class="help-article">
+        <div
+          v-else-if="topic === 'duty'"
+          class="help-article"
+        >
           <h2>关税说明</h2>
           <div class="article-section">
             <h3>关税政策</h3>
@@ -143,12 +171,17 @@
                 <tr><td>食品保健</td><td>10-30%</td></tr>
               </tbody>
             </table>
-            <p class="note">* 以上税率仅供参考，实际以海关核定为准</p>
+            <p class="note">
+              * 以上税率仅供参考，实际以海关核定为准
+            </p>
           </div>
         </div>
         
         <!-- 货币转换 -->
-        <div v-else-if="topic === 'currency'" class="help-article">
+        <div
+          v-else-if="topic === 'currency'"
+          class="help-article"
+        >
           <h2>货币转换</h2>
           <div class="article-section">
             <h3>支持的货币</h3>
@@ -169,7 +202,10 @@
         </div>
         
         <!-- 尺码对照 -->
-        <div v-else-if="topic === 'size'" class="help-article">
+        <div
+          v-else-if="topic === 'size'"
+          class="help-article"
+        >
           <h2>尺码对照表</h2>
           <div class="article-section">
             <h3>服装尺码</h3>
@@ -204,8 +240,15 @@
         </div>
       </div>
       
-      <div class="help-contact" v-if="topic">
-        <p>还有疑问？<router-link to="/help">返回帮助中心</router-link> 或联系客服</p>
+      <div
+        v-if="topic"
+        class="help-contact"
+      >
+        <p>
+          还有疑问？<router-link to="/help">
+            返回帮助中心
+          </router-link> 或联系客服
+        </p>
       </div>
     </div>
   </div>

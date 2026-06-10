@@ -1,8 +1,8 @@
 <template>
   <div class="auth-page">
     <div class="bg-decoration">
-      <div class="gradient-blob blob-1"></div>
-      <div class="gradient-blob blob-2"></div>
+      <div class="gradient-blob blob-1" />
+      <div class="gradient-blob blob-2" />
     </div>
     <div class="auth-container">
       <div class="auth-card">
@@ -10,30 +10,65 @@
           <h1>找回密码</h1>
           <p>输入您的注册邮箱，我们将发送密码重置链接</p>
         </div>
-        <form @submit.prevent="handleSubmit" class="auth-form" v-if="!submitted">
+        <form
+          v-if="!submitted"
+          class="auth-form"
+          @submit.prevent="handleSubmit"
+        >
           <div class="form-group">
             <label class="form-label">注册邮箱</label>
             <div class="input-wrapper">
               <span class="input-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect
+                    x="2"
+                    y="4"
+                    width="20"
+                    height="16"
+                    rx="2"
+                  /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                 </svg>
               </span>
-              <input type="email" v-model="email" placeholder="请输入注册邮箱" required />
+              <input
+                v-model="email"
+                type="email"
+                placeholder="请输入注册邮箱"
+                required
+              >
             </div>
           </div>
-          <button type="submit" class="submit-btn" :disabled="loading">
+          <button
+            type="submit"
+            class="submit-btn"
+            :disabled="loading"
+          >
             {{ loading ? '发送中...' : '发送重置链接' }}
           </button>
         </form>
-        <div v-else class="success-msg">
-          <div class="success-icon">✓</div>
+        <div
+          v-else
+          class="success-msg"
+        >
+          <div class="success-icon">
+            ✓
+          </div>
           <h2>邮件已发送</h2>
           <p>密码重置链接已发送至 <strong>{{ email }}</strong>，请查收邮件并按照提示操作。</p>
-          <p class="hint">如未收到邮件，请检查垃圾邮件文件夹。</p>
+          <p class="hint">
+            如未收到邮件，请检查垃圾邮件文件夹。
+          </p>
         </div>
         <div class="form-footer">
-          <router-link to="/login">返回登录</router-link>
+          <router-link to="/login">
+            返回登录
+          </router-link>
         </div>
       </div>
     </div>

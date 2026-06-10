@@ -2,20 +2,33 @@
   <div class="product-detail-page">
     <div class="container">
       <div class="breadcrumb">
-        <router-link to="/">首页</router-link>
+        <router-link to="/">
+          首页
+        </router-link>
         <span>/</span>
-        <router-link to="/products">商品</router-link>
+        <router-link to="/products">
+          商品
+        </router-link>
         <span>/</span>
         <span>{{ product?.name }}</span>
       </div>
       
-      <div v-if="product" class="product-detail">
+      <div
+        v-if="product"
+        class="product-detail"
+      >
         <!-- 商品图片 -->
         <div class="product-gallery">
           <div class="main-image">
-            <img :src="currentImage" :alt="product.name" />
+            <img
+              :src="currentImage"
+              :alt="product.name"
+            >
           </div>
-          <div class="thumbnail-list" v-if="product.images && product.images.length > 1">
+          <div
+            v-if="product.images && product.images.length > 1"
+            class="thumbnail-list"
+          >
             <div 
               v-for="(img, index) in product.images" 
               :key="index"
@@ -23,19 +36,41 @@
               :class="{ active: currentImageIndex === index }"
               @click="currentImageIndex = index"
             >
-              <img :src="img" :alt="`${product.name} - ${index + 1}`" />
+              <img
+                :src="img"
+                :alt="`${product.name} - ${index + 1}`"
+              >
             </div>
           </div>
         </div>
         
         <!-- 商品信息 -->
         <div class="product-info">
-          <h1 class="product-name">{{ product.name }}</h1>
+          <h1 class="product-name">
+            {{ product.name }}
+          </h1>
+          
+          <div
+            v-if="reviewStats.total_count > 0"
+            class="product-rating"
+          >
+            <StarRating
+              :model-value="reviewStats.average_rating"
+              :show-value="true"
+            />
+            <span class="rating-count">{{ reviewStats.total_count }} 条评价</span>
+          </div>
           
           <div class="product-price">
             <span class="current-price">${{ displayPrice }}</span>
-            <span v-if="product.salePrice" class="original-price">${{ product.price.toFixed(2) }}</span>
-            <span v-if="product.salePrice" class="discount-badge">-{{ discountPercent }}%</span>
+            <span
+              v-if="product.salePrice"
+              class="original-price"
+            >${{ product.price.toFixed(2) }}</span>
+            <span
+              v-if="product.salePrice"
+              class="discount-badge"
+            >-{{ discountPercent }}%</span>
           </div>
           
           <div class="product-desc">
@@ -56,44 +91,111 @@
           <div class="quantity-selector">
             <span class="label">数量：</span>
             <div class="quantity-control">
-              <button @click="quantity > 1 && quantity--">-</button>
-              <input type="number" v-model.number="quantity" min="1" :max="product.stock || 99" />
-              <button @click="quantity < (product.stock || 99) && quantity++">+</button>
+              <button @click="quantity > 1 && quantity--">
+                -
+              </button>
+              <input
+                v-model.number="quantity"
+                type="number"
+                min="1"
+                :max="product.stock || 99"
+              >
+              <button @click="quantity < (product.stock || 99) && quantity++">
+                +
+              </button>
             </div>
           </div>
           
           <div class="product-actions">
-            <button class="btn-add-cart" @click="handleAddToCart">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="9" cy="21" r="1"/>
-                <circle cx="20" cy="21" r="1"/>
-                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            <button
+              class="btn-add-cart"
+              @click="handleAddToCart"
+            >
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <circle
+                  cx="9"
+                  cy="21"
+                  r="1"
+                />
+                <circle
+                  cx="20"
+                  cy="21"
+                  r="1"
+                />
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
               </svg>
               加入购物车
             </button>
-            <button class="btn-buy-now" @click="handleBuyNow">立即购买</button>
+            <button
+              class="btn-buy-now"
+              @click="handleBuyNow"
+            >
+              立即购买
+            </button>
           </div>
           
           <div class="product-features">
             <div class="feature">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
               <span>正品保障</span>
             </div>
             <div class="feature">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="1" y="3" width="15" height="13" rx="2"/>
-                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-                <circle cx="5.5" cy="18.5" r="2.5"/>
-                <circle cx="18.5" cy="18.5" r="2.5"/>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <rect
+                  x="1"
+                  y="3"
+                  width="15"
+                  height="13"
+                  rx="2"
+                />
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                <circle
+                  cx="5.5"
+                  cy="18.5"
+                  r="2.5"
+                />
+                <circle
+                  cx="18.5"
+                  cy="18.5"
+                  r="2.5"
+                />
               </svg>
               <span>全球配送</span>
             </div>
             <div class="feature">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                <polyline points="9 22 9 12 15 12 15 22"/>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
               </svg>
               <span>7天无理由退换</span>
             </div>
@@ -101,9 +203,17 @@
         </div>
       </div>
       
-      <div v-else class="loading">
+      <div
+        v-else
+        class="loading"
+      >
         <p>加载中...</p>
       </div>
+      
+      <ProductReviews
+        v-if="product"
+        :product-id="product.id"
+      />
     </div>
   </div>
 </template>
@@ -113,17 +223,23 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
+import { useReviewStore } from '@/stores/review'
 import toast from '@/utils/toast'
 import { productApi } from '@/utils/api'
+import StarRating from '@/components/StarRating.vue'
+import ProductReviews from '@/components/ProductReviews.vue'
 
 const route = useRoute()
 const router = useRouter()
 const cartStore = useCartStore()
 const userStore = useUserStore()
+const reviewStore = useReviewStore()
 
 const product = ref(null)
 const quantity = ref(1)
 const currentImageIndex = ref(0)
+
+const reviewStats = computed(() => reviewStore.getStatsForProduct(parseInt(route.params.id)))
 
 const categories = {
   electronics: '数码电子',
@@ -185,6 +301,7 @@ const handleBuyNow = () => {
 onMounted(async () => {
   try {
     product.value = await productApi.getById(route.params.id)
+    reviewStore.fetchReviewStats(parseInt(route.params.id))
   } catch (e) {
     console.error('加载商品失败:', e)
     toast.error('商品不存在')
@@ -285,8 +402,20 @@ onMounted(async () => {
     font-size: 28px;
     font-weight: 700;
     color: #1a1a1a;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     line-height: 1.4;
+  }
+  
+  .product-rating {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    
+    .rating-count {
+      font-size: 14px;
+      color: #999;
+    }
   }
   
   .product-price {

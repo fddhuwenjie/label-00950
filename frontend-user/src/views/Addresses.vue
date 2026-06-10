@@ -2,79 +2,177 @@
   <div class="addresses-page">
     <div class="container">
       <div class="page-header">
-        <h1 class="page-title">我的地址</h1>
-        <button class="add-btn" @click="showAddForm = true">+ 新增地址</button>
+        <h1 class="page-title">
+          我的地址
+        </h1>
+        <button
+          class="add-btn"
+          @click="showAddForm = true"
+        >
+          + 新增地址
+        </button>
       </div>
 
-      <div v-if="addresses.length === 0 && !showAddForm" class="empty">
+      <div
+        v-if="addresses.length === 0 && !showAddForm"
+        class="empty"
+      >
         <p>暂无收货地址</p>
-        <button class="add-btn" @click="showAddForm = true">添加收货地址</button>
+        <button
+          class="add-btn"
+          @click="showAddForm = true"
+        >
+          添加收货地址
+        </button>
       </div>
 
-      <div v-if="showAddForm" class="address-form-card">
+      <div
+        v-if="showAddForm"
+        class="address-form-card"
+      >
         <h3>{{ editingIndex >= 0 ? '编辑地址' : '新增地址' }}</h3>
         <div class="form-grid">
           <div class="form-group">
             <label>收货人 *</label>
-            <input v-model="form.name" placeholder="请输入收货人姓名" />
+            <input
+              v-model="form.name"
+              placeholder="请输入收货人姓名"
+            >
           </div>
           <div class="form-group">
             <label>联系电话 *</label>
-            <input v-model="form.phone" placeholder="请输入手机号" />
+            <input
+              v-model="form.phone"
+              placeholder="请输入手机号"
+            >
           </div>
           <div class="form-group">
             <label>国家/地区 *</label>
             <select v-model="form.country">
-              <option value="CN">中国</option>
-              <option value="US">美国</option>
-              <option value="GB">英国</option>
-              <option value="JP">日本</option>
-              <option value="KR">韩国</option>
-              <option value="AU">澳大利亚</option>
-              <option value="CA">加拿大</option>
-              <option value="DE">德国</option>
-              <option value="FR">法国</option>
-              <option value="SG">新加坡</option>
+              <option value="CN">
+                中国
+              </option>
+              <option value="US">
+                美国
+              </option>
+              <option value="GB">
+                英国
+              </option>
+              <option value="JP">
+                日本
+              </option>
+              <option value="KR">
+                韩国
+              </option>
+              <option value="AU">
+                澳大利亚
+              </option>
+              <option value="CA">
+                加拿大
+              </option>
+              <option value="DE">
+                德国
+              </option>
+              <option value="FR">
+                法国
+              </option>
+              <option value="SG">
+                新加坡
+              </option>
             </select>
           </div>
           <div class="form-group">
             <label>城市 *</label>
-            <input v-model="form.city" placeholder="请输入城市" />
+            <input
+              v-model="form.city"
+              placeholder="请输入城市"
+            >
           </div>
           <div class="form-group full-width">
             <label>详细地址 *</label>
-            <input v-model="form.address" placeholder="请输入详细地址" />
+            <input
+              v-model="form.address"
+              placeholder="请输入详细地址"
+            >
           </div>
           <div class="form-group">
             <label>邮编</label>
-            <input v-model="form.zipCode" placeholder="请输入邮编" />
+            <input
+              v-model="form.zipCode"
+              placeholder="请输入邮编"
+            >
           </div>
           <div class="form-group">
             <label>邮箱</label>
-            <input v-model="form.email" type="email" placeholder="请输入邮箱" />
+            <input
+              v-model="form.email"
+              type="email"
+              placeholder="请输入邮箱"
+            >
           </div>
         </div>
         <label class="default-check">
-          <input type="checkbox" v-model="form.isDefault" /> 设为默认地址
+          <input
+            v-model="form.isDefault"
+            type="checkbox"
+          > 设为默认地址
         </label>
         <div class="form-actions">
-          <button class="save-btn" @click="saveAddress">保存</button>
-          <button class="cancel-btn" @click="cancelEdit">取消</button>
+          <button
+            class="save-btn"
+            @click="saveAddress"
+          >
+            保存
+          </button>
+          <button
+            class="cancel-btn"
+            @click="cancelEdit"
+          >
+            取消
+          </button>
         </div>
       </div>
 
       <div class="address-list">
-        <div v-for="(addr, idx) in addresses" :key="idx" class="address-card" :class="{ default: addr.isDefault }">
-          <div v-if="addr.isDefault" class="default-tag">默认</div>
+        <div
+          v-for="(addr, idx) in addresses"
+          :key="idx"
+          class="address-card"
+          :class="{ default: addr.isDefault }"
+        >
+          <div
+            v-if="addr.isDefault"
+            class="default-tag"
+          >
+            默认
+          </div>
           <div class="addr-info">
-            <div class="addr-name">{{ addr.name }} <span class="addr-phone">{{ addr.phone }}</span></div>
-            <div class="addr-detail">{{ getCountryName(addr.country) }} {{ addr.city }} {{ addr.address }}</div>
-            <div v-if="addr.zipCode" class="addr-zip">邮编: {{ addr.zipCode }}</div>
+            <div class="addr-name">
+              {{ addr.name }} <span class="addr-phone">{{ addr.phone }}</span>
+            </div>
+            <div class="addr-detail">
+              {{ getCountryName(addr.country) }} {{ addr.city }} {{ addr.address }}
+            </div>
+            <div
+              v-if="addr.zipCode"
+              class="addr-zip"
+            >
+              邮编: {{ addr.zipCode }}
+            </div>
           </div>
           <div class="addr-actions">
-            <button @click="editAddress(idx)">编辑</button>
-            <button @click="deleteAddress(idx)">删除</button>
-            <button v-if="!addr.isDefault" @click="setDefault(idx)">设为默认</button>
+            <button @click="editAddress(idx)">
+              编辑
+            </button>
+            <button @click="deleteAddress(idx)">
+              删除
+            </button>
+            <button
+              v-if="!addr.isDefault"
+              @click="setDefault(idx)"
+            >
+              设为默认
+            </button>
           </div>
         </div>
       </div>

@@ -1,26 +1,71 @@
 <template>
-  <div class="product-card" @click="goToProduct">
+  <div
+    class="product-card"
+    @click="goToProduct"
+  >
     <div class="product-image">
-      <img :src="product.image" :alt="product.name" loading="lazy" />
-      <div v-if="product.salePrice" class="sale-badge">
+      <img
+        :src="product.image"
+        :alt="product.name"
+        loading="lazy"
+      >
+      <div
+        v-if="product.salePrice"
+        class="sale-badge"
+      >
         -{{ discountPercent }}%
       </div>
       <div class="quick-actions">
-        <button class="action-btn" @click.stop="handleAddToCart" title="加入购物车">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="9" cy="21" r="1"/>
-            <circle cx="20" cy="21" r="1"/>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        <button
+          class="action-btn"
+          title="加入购物车"
+          @click.stop="handleAddToCart"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle
+              cx="9"
+              cy="21"
+              r="1"
+            />
+            <circle
+              cx="20"
+              cy="21"
+              r="1"
+            />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
           </svg>
           <span>加入购物车</span>
         </button>
       </div>
     </div>
     <div class="product-info">
-      <h3 class="product-name">{{ product.name }}</h3>
+      <h3 class="product-name">
+        {{ product.name }}
+      </h3>
+      <div
+        v-if="ratingStats.total_count > 0"
+        class="product-rating"
+      >
+        <StarRating
+          :model-value="ratingStats.average_rating"
+          :size="'sm'"
+          :show-value="true"
+        />
+        <span class="rating-text">({{ ratingStats.total_count }})</span>
+      </div>
       <div class="product-price">
         <span class="current-price">${{ displayPrice }}</span>
-        <span v-if="product.salePrice" class="original-price">
+        <span
+          v-if="product.salePrice"
+          class="original-price"
+        >
           ${{ product.price.toFixed(2) }}
         </span>
       </div>
@@ -29,10 +74,12 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
+import { useReviewStore } from '@/stores/review'
+import StarRating from '@/components/StarRating.vue'
 import toast from '@/utils/toast'
 
 const props = defineProps({
@@ -45,6 +92,15 @@ const props = defineProps({
 const router = useRouter()
 const cartStore = useCartStore()
 const userStore = useUserStore()
+const reviewStore = useReviewStore()
+
+const ratingStats = computed(() => reviewStore.getStatsForProduct(props.product.id))
+
+onMounted(() => {
+  if (props.product.id) {
+    reviewStore.fetchReviewStats(props.product.id)
+  }
+})
 
 const displayPrice = computed(() => {
   return (props.product.salePrice || props.product.price).toFixed(2)
@@ -171,13 +227,25 @@ const handleAddToCart = () => {
   font-size: 15px;
   font-weight: 600;
   color: #1a1a1a;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 45px;
+}
+
+.product-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  
+  .rating-text {
+    font-size: 12px;
+    color: #999;
+  }
 }
 
 .product-price {

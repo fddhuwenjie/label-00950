@@ -1,7 +1,9 @@
 <template>
   <div class="account-page">
     <div class="container">
-      <h1 class="page-title">我的账户</h1>
+      <h1 class="page-title">
+        我的账户
+      </h1>
       
       <div class="account-content">
         <aside class="account-sidebar">
@@ -29,81 +31,134 @@
         
         <main class="account-main">
           <!-- 个人信息 -->
-          <section v-show="activeSection === 'profile'" class="account-section">
+          <section
+            v-show="activeSection === 'profile'"
+            class="account-section"
+          >
             <h2>个人信息</h2>
             <form @submit.prevent="saveProfile">
               <div class="form-row">
-                <div class="form-group" :class="{ error: profileErrors.username }">
+                <div
+                  class="form-group"
+                  :class="{ error: profileErrors.username }"
+                >
                   <label>用户名 *</label>
                   <input 
-                    type="text" 
-                    v-model="profile.username"
+                    v-model="profile.username" 
+                    type="text"
                     @blur="validateProfileField('username')"
-                  />
-                  <span v-if="profileErrors.username" class="error-msg">{{ profileErrors.username }}</span>
+                  >
+                  <span
+                    v-if="profileErrors.username"
+                    class="error-msg"
+                  >{{ profileErrors.username }}</span>
                 </div>
                 <div class="form-group">
                   <label>昵称</label>
-                  <input type="text" v-model="profile.nickname" />
+                  <input
+                    v-model="profile.nickname"
+                    type="text"
+                  >
                 </div>
               </div>
-              <div class="form-group" :class="{ error: profileErrors.email }">
+              <div
+                class="form-group"
+                :class="{ error: profileErrors.email }"
+              >
                 <label>电子邮箱 *</label>
                 <input 
-                  type="email" 
-                  v-model="profile.email"
+                  v-model="profile.email" 
+                  type="email"
                   @blur="validateProfileField('email')"
-                />
-                <span v-if="profileErrors.email" class="error-msg">{{ profileErrors.email }}</span>
+                >
+                <span
+                  v-if="profileErrors.email"
+                  class="error-msg"
+                >{{ profileErrors.email }}</span>
               </div>
-              <div class="form-group" :class="{ error: profileErrors.phone }">
+              <div
+                class="form-group"
+                :class="{ error: profileErrors.phone }"
+              >
                 <label>手机号码</label>
                 <input 
-                  type="tel" 
-                  v-model="profile.phone"
+                  v-model="profile.phone" 
+                  type="tel"
                   placeholder="请输入手机号码"
                   @blur="validateProfileField('phone')"
-                />
-                <span v-if="profileErrors.phone" class="error-msg">{{ profileErrors.phone }}</span>
+                >
+                <span
+                  v-if="profileErrors.phone"
+                  class="error-msg"
+                >{{ profileErrors.phone }}</span>
               </div>
-              <button type="submit" class="save-btn" :disabled="profileSaving">
+              <button
+                type="submit"
+                class="save-btn"
+                :disabled="profileSaving"
+              >
                 {{ profileSaving ? '保存中...' : '保存修改' }}
               </button>
             </form>
           </section>
           
           <!-- 修改密码 -->
-          <section v-show="activeSection === 'password'" class="account-section">
+          <section
+            v-show="activeSection === 'password'"
+            class="account-section"
+          >
             <h2>修改密码</h2>
             <form @submit.prevent="changePassword">
-              <div class="form-group" :class="{ error: passwordErrors.current }">
+              <div
+                class="form-group"
+                :class="{ error: passwordErrors.current }"
+              >
                 <label>当前密码 *</label>
                 <input 
-                  type="password" 
-                  v-model="password.current"
+                  v-model="password.current" 
+                  type="password"
                   @blur="validatePasswordField('current')"
-                />
-                <span v-if="passwordErrors.current" class="error-msg">{{ passwordErrors.current }}</span>
+                >
+                <span
+                  v-if="passwordErrors.current"
+                  class="error-msg"
+                >{{ passwordErrors.current }}</span>
               </div>
-              <div class="form-group" :class="{ error: passwordErrors.new }">
+              <div
+                class="form-group"
+                :class="{ error: passwordErrors.new }"
+              >
                 <label>新密码 *</label>
                 <input 
-                  type="password" 
-                  v-model="password.new"
+                  v-model="password.new" 
+                  type="password"
                   @blur="validatePasswordField('new')"
-                />
-                <span v-if="passwordErrors.new" class="error-msg">{{ passwordErrors.new }}</span>
+                >
+                <span
+                  v-if="passwordErrors.new"
+                  class="error-msg"
+                >{{ passwordErrors.new }}</span>
               </div>
-              <div class="form-group" :class="{ error: passwordErrors.confirm }">
+              <div
+                class="form-group"
+                :class="{ error: passwordErrors.confirm }"
+              >
                 <label>确认新密码 *</label>
                 <input 
-                  type="password" 
-                  v-model="password.confirm"
+                  v-model="password.confirm" 
+                  type="password"
                   @blur="validatePasswordField('confirm')"
-                />
-                <span v-if="passwordErrors.confirm" class="error-msg">{{ passwordErrors.confirm }}</span>
+                >
+                <span
+                  v-if="passwordErrors.confirm"
+                  class="error-msg"
+                >{{ passwordErrors.confirm }}</span>
               </div>
-              <button type="submit" class="save-btn" :disabled="passwordSaving">
+              <button
+                type="submit"
+                class="save-btn"
+                :disabled="passwordSaving"
+              >
                 {{ passwordSaving ? '更新中...' : '更新密码' }}
               </button>
             </form>
