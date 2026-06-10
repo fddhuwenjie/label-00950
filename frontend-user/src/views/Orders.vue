@@ -2,8 +2,12 @@
   <div class="orders-page">
     <div class="container">
       <div class="page-header">
-        <h1 class="page-title">我的订单</h1>
-        <p class="page-subtitle">查看和管理您的所有订单</p>
+        <h1 class="page-title">
+          我的订单
+        </h1>
+        <p class="page-subtitle">
+          查看和管理您的所有订单
+        </p>
       </div>
       
       <div class="orders-tabs">
@@ -14,29 +18,52 @@
           @click="activeTab = tab.id"
         >
           {{ tab.label }}
-          <span v-if="getTabCount(tab.id) > 0" class="tab-count">{{ getTabCount(tab.id) }}</span>
+          <span
+            v-if="getTabCount(tab.id) > 0"
+            class="tab-count"
+          >{{ getTabCount(tab.id) }}</span>
         </button>
       </div>
       
-      <div v-if="loading" class="loading-state">
+      <div
+        v-if="loading"
+        class="loading-state"
+      >
         <p>加载中...</p>
       </div>
-      <div v-else-if="filteredOrders.length > 0" class="orders-list">
-        <div v-for="order in filteredOrders" :key="order.id" class="order-card">
+      <div
+        v-else-if="filteredOrders.length > 0"
+        class="orders-list"
+      >
+        <div
+          v-for="order in filteredOrders"
+          :key="order.id"
+          class="order-card"
+        >
           <div class="order-header">
             <div class="order-info">
               <span class="order-number">订单号: {{ order.id }}</span>
               <span class="order-date">{{ order.date }}</span>
             </div>
-            <span class="order-status" :class="order.status">
+            <span
+              class="order-status"
+              :class="order.status"
+            >
               {{ getStatusText(order.status) }}
             </span>
           </div>
           
           <div class="order-items">
-            <div v-for="item in order.items" :key="item.id" class="order-item">
+            <div
+              v-for="item in order.items"
+              :key="item.id"
+              class="order-item"
+            >
               <div class="item-image">
-                <img :src="item.image" :alt="item.name" />
+                <img
+                  :src="item.image"
+                  :alt="item.name"
+                >
               </div>
               <div class="item-info">
                 <span class="item-name">{{ item.name }}</span>
@@ -44,6 +71,22 @@
                   <span class="item-price">${{ item.price.toFixed(2) }}</span>
                   <span class="item-qty">x{{ item.quantity }}</span>
                 </span>
+                <div
+                  v-if="order.status === 'completed'"
+                  class="item-review-action"
+                >
+                  <button 
+                    v-if="!isItemReviewed(order.id, item.id)"
+                    class="btn-review" 
+                    @click="openReviewModal(order, item)"
+                  >
+                    去评价
+                  </button>
+                  <span
+                    v-else
+                    class="reviewed-tag"
+                  >已评价</span>
+                </div>
               </div>
               <span class="item-total">${{ (item.price * item.quantity).toFixed(2) }}</span>
             </div>
@@ -55,10 +98,17 @@
               合计: <span class="total-price">${{ order.total.toFixed(2) }}</span>
             </div>
             <div class="order-actions">
-              <button v-if="order.status === 'pending'" class="btn-primary" @click="handlePay(order)">
+              <button
+                v-if="order.status === 'pending'"
+                class="btn-primary"
+                @click="handlePay(order)"
+              >
                 去支付
               </button>
-              <button class="btn-outline" @click="viewOrderDetail(order)">
+              <button
+                class="btn-outline"
+                @click="viewOrderDetail(order)"
+              >
                 订单详情
               </button>
             </div>
@@ -66,36 +116,91 @@
         </div>
       </div>
       
-      <div v-else class="empty-orders">
+      <div
+        v-else
+        class="empty-orders"
+      >
         <div class="empty-icon">
-          <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="16" y1="13" x2="8" y2="13"/>
-            <line x1="16" y1="17" x2="8" y2="17"/>
-            <polyline points="10 9 9 9 8 9"/>
+          <svg
+            width="80"
+            height="80"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1"
+          >
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line
+              x1="16"
+              y1="13"
+              x2="8"
+              y2="13"
+            />
+            <line
+              x1="16"
+              y1="17"
+              x2="8"
+              y2="17"
+            />
+            <polyline points="10 9 9 9 8 9" />
           </svg>
         </div>
         <h2>暂无订单</h2>
         <p>快去选购心仪的商品吧</p>
-        <router-link to="/products" class="shop-btn">去购物</router-link>
+        <router-link
+          to="/products"
+          class="shop-btn"
+        >
+          去购物
+        </router-link>
       </div>
     </div>
     
     <!-- 订单详情弹窗 -->
-    <div v-if="showDetailModal" class="modal-overlay" @click="closeModal">
-      <div class="modal-content" @click.stop>
+    <div
+      v-if="showDetailModal"
+      class="modal-overlay"
+      @click="closeModal"
+    >
+      <div
+        class="modal-content"
+        @click.stop
+      >
         <div class="modal-header">
           <h3>订单详情</h3>
-          <button class="close-btn" @click="closeModal">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
+          <button
+            class="close-btn"
+            @click="closeModal"
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line
+                x1="18"
+                y1="6"
+                x2="6"
+                y2="18"
+              />
+              <line
+                x1="6"
+                y1="6"
+                x2="18"
+                y2="18"
+              />
             </svg>
           </button>
         </div>
         
-        <div class="modal-body" v-if="selectedOrder">
+        <div
+          v-if="selectedOrder"
+          class="modal-body"
+        >
           <div class="detail-section">
             <h4>订单信息</h4>
             <div class="detail-grid">
@@ -110,7 +215,10 @@
               <div class="detail-item">
                 <span class="label">订单状态</span>
                 <span class="value">
-                  <span class="status-tag" :class="selectedOrder.status">
+                  <span
+                    class="status-tag"
+                    :class="selectedOrder.status"
+                  >
                     {{ getStatusText(selectedOrder.status) }}
                   </span>
                 </span>
@@ -143,8 +251,15 @@
           <div class="detail-section">
             <h4>商品清单</h4>
             <div class="items-list">
-              <div v-for="item in selectedOrder.items" :key="item.id" class="item-row">
-                <img :src="item.image" :alt="item.name" />
+              <div
+                v-for="item in selectedOrder.items"
+                :key="item.id"
+                class="item-row"
+              >
+                <img
+                  :src="item.image"
+                  :alt="item.name"
+                >
                 <div class="item-detail">
                   <span class="name">{{ item.name }}</span>
                   <span class="meta">${{ item.price.toFixed(2) }} x {{ item.quantity }}</span>
@@ -158,27 +273,64 @@
     </div>
     
     <!-- 支付弹窗 -->
-    <div v-if="showPayModal" class="modal-overlay" @click="closePayModal">
-      <div class="modal-content pay-modal" @click.stop>
+    <div
+      v-if="showPayModal"
+      class="modal-overlay"
+      @click="closePayModal"
+    >
+      <div
+        class="modal-content pay-modal"
+        @click.stop
+      >
         <div class="modal-header">
           <h3>确认支付</h3>
-          <button class="close-btn" @click="closePayModal">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/>
-              <line x1="6" y1="6" x2="18" y2="18"/>
+          <button
+            class="close-btn"
+            @click="closePayModal"
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line
+                x1="18"
+                y1="6"
+                x2="6"
+                y2="18"
+              />
+              <line
+                x1="6"
+                y1="6"
+                x2="18"
+                y2="18"
+              />
             </svg>
           </button>
         </div>
         
-        <div class="modal-body" v-if="payOrder">
+        <div
+          v-if="payOrder"
+          class="modal-body"
+        >
           <div class="pay-amount">
             <span class="pay-label">支付金额</span>
             <span class="pay-price">${{ payOrder.total.toFixed(2) }}</span>
           </div>
           
           <div class="pay-methods">
-            <label class="pay-method" :class="{ active: payMethod === 'alipay' }">
-              <input type="radio" v-model="payMethod" value="alipay" />
+            <label
+              class="pay-method"
+              :class="{ active: payMethod === 'alipay' }"
+            >
+              <input
+                v-model="payMethod"
+                type="radio"
+                value="alipay"
+              >
               <span class="method-icon alipay">
                 <span class="icon-text">支</span>
               </span>
@@ -187,8 +339,15 @@
                 <span class="method-desc">Alipay</span>
               </div>
             </label>
-            <label class="pay-method" :class="{ active: payMethod === 'wechat' }">
-              <input type="radio" v-model="payMethod" value="wechat" />
+            <label
+              class="pay-method"
+              :class="{ active: payMethod === 'wechat' }"
+            >
+              <input
+                v-model="payMethod"
+                type="radio"
+                value="wechat"
+              >
               <span class="method-icon wechat">
                 <span class="icon-text">微</span>
               </span>
@@ -199,8 +358,180 @@
             </label>
           </div>
           
-          <button class="pay-submit-btn" @click="confirmPay">
+          <button
+            class="pay-submit-btn"
+            @click="confirmPay"
+          >
             确认支付
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 评价弹窗 -->
+    <div
+      v-if="showReviewModal"
+      class="modal-overlay"
+      @click="closeReviewModal"
+    >
+      <div
+        class="modal-content review-modal"
+        @click.stop
+      >
+        <div class="modal-header">
+          <h3>发表评价</h3>
+          <button
+            class="close-btn"
+            @click="closeReviewModal"
+          >
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <line
+                x1="18"
+                y1="6"
+                x2="6"
+                y2="18"
+              />
+              <line
+                x1="6"
+                y1="6"
+                x2="18"
+                y2="18"
+              />
+            </svg>
+          </button>
+        </div>
+        
+        <div
+          v-if="reviewItem"
+          class="modal-body"
+        >
+          <div class="review-product-info">
+            <img
+              :src="reviewItem.image"
+              :alt="reviewItem.name"
+            >
+            <div class="review-product-detail">
+              <span class="product-name">{{ reviewItem.name }}</span>
+              <span class="product-price">${{ reviewItem.price.toFixed(2) }} x {{ reviewItem.quantity }}</span>
+            </div>
+          </div>
+
+          <div class="review-form">
+            <div class="form-group">
+              <label class="form-label">商品评分</label>
+              <div class="rating-input">
+                <StarRating
+                  v-model="reviewForm.rating"
+                  :readonly="false"
+                  :size="32"
+                />
+                <span class="rating-text">{{ ratingText }}</span>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">评价内容</label>
+              <textarea 
+                v-model="reviewForm.comment" 
+                class="review-textarea" 
+                placeholder="分享您的使用体验，帮助其他买家做出选择~"
+                maxlength="500"
+                rows="4"
+              />
+              <span class="char-count">{{ reviewForm.comment.length }}/500</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">上传图片（最多3张）</label>
+              <div class="image-upload-area">
+                <div 
+                  v-for="(img, idx) in reviewForm.images" 
+                  :key="idx" 
+                  class="uploaded-image"
+                >
+                  <img
+                    :src="img"
+                    alt="评价图片"
+                  >
+                  <button
+                    class="remove-image-btn"
+                    @click="removeImage(idx)"
+                  >
+                    <svg
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <line
+                        x1="18"
+                        y1="6"
+                        x2="6"
+                        y2="18"
+                      />
+                      <line
+                        x1="6"
+                        y1="6"
+                        x2="18"
+                        y2="18"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <label 
+                  v-if="reviewForm.images.length < 3" 
+                  class="upload-btn"
+                >
+                  <svg
+                    width="28"
+                    height="28"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <rect
+                      x="3"
+                      y="3"
+                      width="18"
+                      height="18"
+                      rx="2"
+                    />
+                    <circle
+                      cx="8.5"
+                      cy="8.5"
+                      r="1.5"
+                    />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                  <span>上传图片</span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    style="display: none;"
+                    @change="handleImageUpload"
+                  >
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <button 
+            class="submit-review-btn" 
+            :disabled="submittingReview || reviewForm.rating === 0"
+            @click="submitReview"
+          >
+            <span v-if="submittingReview">提交中...</span>
+            <span v-else>提交评价</span>
           </button>
         </div>
       </div>
@@ -211,15 +542,27 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import toast from '@/utils/toast'
-import { orderApi } from '@/utils/api'
+import { orderApi, reviewApi } from '@/utils/api'
+import StarRating from '@/components/StarRating.vue'
 
 const activeTab = ref('all')
 const showDetailModal = ref(false)
 const showPayModal = ref(false)
+const showReviewModal = ref(false)
 const selectedOrder = ref(null)
 const payOrder = ref(null)
+const reviewOrder = ref(null)
+const reviewItem = ref(null)
 const payMethod = ref('alipay')
 const loading = ref(false)
+const submittingReview = ref(false)
+const reviewForm = ref({
+  rating: 0,
+  comment: '',
+  images: [],
+})
+
+const reviewedItemsMap = ref({})
 
 const tabs = [
   { id: 'all', label: '全部订单' },
@@ -252,12 +595,18 @@ const fetchOrders = async () => {
       },
       items: (o.items || []).map(item => ({
         id: item.id,
+        productId: item.product_id,
         name: item.name,
         price: item.price,
         quantity: item.quantity,
         image: item.image || '',
       })),
     }))
+
+    const completedOrders = orders.value.filter(o => o.status === 'completed')
+    for (const order of completedOrders) {
+      await loadReviewStatus(order.rawId)
+    }
   } catch (e) {
     // 未登录或无订单
     orders.value = []
@@ -321,6 +670,115 @@ const confirmPay = async () => {
     } catch (e) {
       toast.error(e.message || '支付失败，请重试')
     }
+  }
+}
+
+const ratingText = computed(() => {
+  const rating = reviewForm.value.rating
+  const texts = {
+    1: '很差',
+    2: '较差',
+    3: '一般',
+    4: '满意',
+    5: '非常满意',
+  }
+  return texts[rating] || '请评分'
+})
+
+const isItemReviewed = (orderId, itemId) => {
+  const key = `${orderId}_${itemId}`
+  return !!reviewedItemsMap.value[key]
+}
+
+const openReviewModal = (order, item) => {
+  reviewOrder.value = order
+  reviewItem.value = item
+  reviewForm.value = {
+    rating: 5,
+    comment: '',
+    images: [],
+  }
+  showReviewModal.value = true
+}
+
+const closeReviewModal = () => {
+  showReviewModal.value = false
+  reviewOrder.value = null
+  reviewItem.value = null
+}
+
+const handleImageUpload = async (e) => {
+  const file = e.target.files?.[0]
+  if (!file) return
+
+  if (!file.type.startsWith('image/')) {
+    toast.error('请选择图片文件')
+    return
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    toast.error('图片大小不能超过5MB')
+    return
+  }
+
+  if (reviewForm.value.images.length >= 3) {
+    toast.error('最多只能上传3张图片')
+    return
+  }
+
+  try {
+    const result = await reviewApi.uploadReviewImage(file)
+    reviewForm.value.images.push(result.url)
+  } catch (e) {
+    toast.error(e.message || '图片上传失败')
+  }
+
+  e.target.value = ''
+}
+
+const removeImage = (index) => {
+  reviewForm.value.images.splice(index, 1)
+}
+
+const submitReview = async () => {
+  if (!reviewForm.value.rating) {
+    toast.warning('请先评分')
+    return
+  }
+
+  submittingReview.value = true
+  try {
+    await reviewApi.createReview({
+      product_id: reviewItem.value.productId || reviewItem.value.id,
+      order_id: reviewOrder.value.rawId,
+      order_item_id: reviewItem.value.id,
+      rating: reviewForm.value.rating,
+      comment: reviewForm.value.comment,
+      images: reviewForm.value.images,
+    })
+
+    toast.success('评价提交成功！')
+    
+    const key = `${reviewOrder.value.id}_${reviewItem.value.id}`
+    reviewedItemsMap.value[key] = true
+
+    closeReviewModal()
+  } catch (e) {
+    toast.error(e.message || '评价提交失败，请重试')
+  } finally {
+    submittingReview.value = false
+  }
+}
+
+const loadReviewStatus = async (orderId) => {
+  try {
+    const result = await reviewApi.getOrderReviewStatus(orderId)
+    result.reviewed_items?.forEach(item => {
+      const key = `${orderId}_${item.order_item_id}`
+      reviewedItemsMap.value[key] = true
+    })
+  } catch (e) {
+    console.error('获取评价状态失败:', e)
   }
 }
 </script>
@@ -936,6 +1394,230 @@ const confirmPay = async () => {
   }
 }
 
+// Review Modal
+.review-modal {
+  max-width: 560px;
+}
+
+.item-review-action {
+  margin-top: 8px;
+}
+
+.btn-review {
+  padding: 6px 14px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.reviewed-tag {
+  display: inline-block;
+  padding: 4px 10px;
+  background: #f0f0f0;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #999;
+}
+
+.review-product-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #fafafa;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  
+  img {
+    width: 70px;
+    height: 70px;
+    border-radius: 8px;
+    object-fit: cover;
+  }
+}
+
+.review-product-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  
+  .product-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    line-height: 1.4;
+  }
+  
+  .product-price {
+    font-size: 14px;
+    color: #ef4444;
+    font-weight: 500;
+  }
+}
+
+.review-form {
+  margin-bottom: 24px;
+}
+
+.form-group {
+  margin-bottom: 24px;
+  
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.rating-input {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.rating-text {
+  font-size: 14px;
+  color: #6366f1;
+  font-weight: 600;
+}
+
+.review-textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #1a1a1a;
+  resize: vertical;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  
+  &:focus {
+    outline: none;
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+  
+  &::placeholder {
+    color: #9ca3af;
+  }
+}
+
+.char-count {
+  display: block;
+  text-align: right;
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
+}
+
+.image-upload-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.uploaded-image {
+  position: relative;
+  width: 100px;
+  height: 100px;
+  border-radius: 8px;
+  overflow: hidden;
+  
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+}
+
+.remove-image-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background: rgba(0, 0, 0, 0.8);
+  }
+}
+
+.upload-btn {
+  width: 100px;
+  height: 100px;
+  border: 2px dashed #d1d5db;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: #9ca3af;
+  
+  &:hover {
+    border-color: #6366f1;
+    color: #6366f1;
+    background: #fafaff;
+  }
+  
+  span {
+    font-size: 12px;
+  }
+}
+
+.submit-review-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.3);
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  &:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(99, 102, 241, 0.4);
+  }
+}
+
 @media (max-width: 768px) {
   .container {
     padding: 20px 16px;
@@ -1103,6 +1785,30 @@ const confirmPay = async () => {
   
   .pay-submit-btn {
     padding: 16px;
+    font-size: 15px;
+  }
+  
+  .review-product-info {
+    padding: 12px;
+    gap: 12px;
+    
+    img {
+      width: 60px;
+      height: 60px;
+    }
+  }
+  
+  .review-product-detail .product-name {
+    font-size: 14px;
+  }
+  
+  .uploaded-image, .upload-btn {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .submit-review-btn {
+    padding: 14px;
     font-size: 15px;
   }
 }

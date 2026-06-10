@@ -1,26 +1,72 @@
 <template>
-  <div class="product-card" @click="goToProduct">
+  <div
+    class="product-card"
+    @click="goToProduct"
+  >
     <div class="product-image">
-      <img :src="product.image" :alt="product.name" loading="lazy" />
-      <div v-if="product.salePrice" class="sale-badge">
+      <img
+        :src="product.image"
+        :alt="product.name"
+        loading="lazy"
+      >
+      <div
+        v-if="product.salePrice"
+        class="sale-badge"
+      >
         -{{ discountPercent }}%
       </div>
       <div class="quick-actions">
-        <button class="action-btn" @click.stop="handleAddToCart" title="加入购物车">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="9" cy="21" r="1"/>
-            <circle cx="20" cy="21" r="1"/>
-            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+        <button
+          class="action-btn"
+          title="加入购物车"
+          @click.stop="handleAddToCart"
+        >
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle
+              cx="9"
+              cy="21"
+              r="1"
+            />
+            <circle
+              cx="20"
+              cy="21"
+              r="1"
+            />
+            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
           </svg>
           <span>加入购物车</span>
         </button>
       </div>
     </div>
     <div class="product-info">
-      <h3 class="product-name">{{ product.name }}</h3>
+      <h3 class="product-name">
+        {{ product.name }}
+      </h3>
+      <div
+        v-if="product.reviewCount > 0"
+        class="product-rating"
+      >
+        <StarRating
+          :average-rating="product.averageRating"
+          :readonly="true"
+          :size="14"
+        />
+        <span class="rating-text">{{ product.averageRating }}</span>
+        <span class="review-count">({{ product.reviewCount }})</span>
+      </div>
       <div class="product-price">
         <span class="current-price">${{ displayPrice }}</span>
-        <span v-if="product.salePrice" class="original-price">
+        <span
+          v-if="product.salePrice"
+          class="original-price"
+        >
           ${{ product.price.toFixed(2) }}
         </span>
       </div>
@@ -34,6 +80,7 @@ import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import toast from '@/utils/toast'
+import StarRating from './StarRating.vue'
 
 const props = defineProps({
   product: {
@@ -165,36 +212,53 @@ const handleAddToCart = () => {
 
 .product-info {
   padding: 20px;
-}
 
-.product-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: #1a1a1a;
-  margin-bottom: 12px;
-  line-height: 1.5;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  min-height: 45px;
-}
-
-.product-price {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  
-  .current-price {
-    font-size: 20px;
-    font-weight: 800;
+  .product-name {
+    font-size: 15px;
+    font-weight: 600;
     color: #1a1a1a;
+    margin-bottom: 8px;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 45px;
   }
-  
-  .original-price {
-    font-size: 14px;
-    color: #999;
-    text-decoration: line-through;
+
+  .product-rating {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+
+    .rating-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #f59e0b;
+    }
+
+    .review-count {
+      font-size: 12px;
+      color: #999;
+    }
+  }
+
+  .product-price {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    
+    .current-price {
+      font-size: 20px;
+      font-weight: 800;
+      color: #1a1a1a;
+    }
+    
+    .original-price {
+      font-size: 14px;
+      color: #999;
+      text-decoration: line-through;
+    }
   }
 }
-</style>

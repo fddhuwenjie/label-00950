@@ -2,22 +2,51 @@
   <div class="auth-page">
     <!-- 背景装饰 -->
     <div class="bg-decoration">
-      <div class="gradient-blob blob-1"></div>
-      <div class="gradient-blob blob-2"></div>
+      <div class="gradient-blob blob-1" />
+      <div class="gradient-blob blob-2" />
     </div>
     
     <div class="auth-container">
       <div class="auth-card">
         <div class="card-header">
           <div class="logo">
-            <svg width="40" height="40" viewBox="0 0 48 48" fill="none">
-              <rect width="48" height="48" rx="12" fill="url(#logo-grad-reg)"/>
-              <path d="M14 24C14 18.477 18.477 14 24 14C29.523 14 34 18.477 34 24C34 29.523 29.523 34 24 34" stroke="white" stroke-width="3" stroke-linecap="round"/>
-              <circle cx="24" cy="24" r="4" fill="white"/>
+            <svg
+              width="40"
+              height="40"
+              viewBox="0 0 48 48"
+              fill="none"
+            >
+              <rect
+                width="48"
+                height="48"
+                rx="12"
+                fill="url(#logo-grad-reg)"
+              />
+              <path
+                d="M14 24C14 18.477 18.477 14 24 14C29.523 14 34 18.477 34 24C34 29.523 29.523 34 24 34"
+                stroke="white"
+                stroke-width="3"
+                stroke-linecap="round"
+              />
+              <circle
+                cx="24"
+                cy="24"
+                r="4"
+                fill="white"
+              />
               <defs>
-                <linearGradient id="logo-grad-reg" x1="0" y1="0" x2="48" y2="48">
-                  <stop stop-color="#6366f1"/>
-                  <stop offset="1" stop-color="#8b5cf6"/>
+                <linearGradient
+                  id="logo-grad-reg"
+                  x1="0"
+                  y1="0"
+                  x2="48"
+                  y2="48"
+                >
+                  <stop stop-color="#6366f1" />
+                  <stop
+                    offset="1"
+                    stop-color="#8b5cf6"
+                  />
                 </linearGradient>
               </defs>
             </svg>
@@ -26,22 +55,36 @@
           <p>加入我们，开启全球购物之旅</p>
         </div>
         
-        <form @submit.prevent="handleRegister" class="auth-form">
+        <form
+          class="auth-form"
+          @submit.prevent="handleRegister"
+        >
           <div class="form-group">
             <label class="form-label">用户名</label>
             <div class="input-wrapper">
               <span class="input-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                  <circle cx="12" cy="7" r="4"/>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle
+                    cx="12"
+                    cy="7"
+                    r="4"
+                  />
                 </svg>
               </span>
               <input 
-                type="text" 
                 v-model="form.username" 
+                type="text" 
                 placeholder="请输入用户名"
                 required
-              />
+              >
             </div>
           </div>
           
@@ -49,17 +92,24 @@
             <label class="form-label">电子邮箱</label>
             <div class="input-wrapper">
               <span class="input-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                  <polyline points="22,6 12,13 2,6"/>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                  <polyline points="22,6 12,13 2,6" />
                 </svg>
               </span>
               <input 
-                type="email" 
                 v-model="form.email" 
+                type="email" 
                 placeholder="请输入邮箱"
                 required
-              />
+              >
             </div>
           </div>
           
@@ -67,26 +117,69 @@
             <label class="form-label">密码</label>
             <div class="input-wrapper">
               <span class="input-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect
+                    x="3"
+                    y="11"
+                    width="18"
+                    height="11"
+                    rx="2"
+                    ry="2"
+                  />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
               </span>
               <input 
-                :type="showPassword ? 'text' : 'password'" 
                 v-model="form.password" 
+                :type="showPassword ? 'text' : 'password'" 
                 placeholder="请输入密码（至少6位）"
                 minlength="6"
                 required
-              />
-              <button type="button" class="toggle-password" @click="showPassword = !showPassword">
-                <svg v-if="!showPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
+              >
+              <button
+                type="button"
+                class="toggle-password"
+                @click="showPassword = !showPassword"
+              >
+                <svg
+                  v-if="!showPassword"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="3"
+                  />
                 </svg>
-                <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
+                <svg
+                  v-else
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line
+                    x1="1"
+                    y1="1"
+                    x2="23"
+                    y2="23"
+                  />
                 </svg>
               </button>
             </div>
@@ -96,25 +189,68 @@
             <label class="form-label">确认密码</label>
             <div class="input-wrapper">
               <span class="input-icon">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <rect
+                    x="3"
+                    y="11"
+                    width="18"
+                    height="11"
+                    rx="2"
+                    ry="2"
+                  />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
                 </svg>
               </span>
               <input 
-                :type="showConfirmPassword ? 'text' : 'password'" 
                 v-model="form.confirmPassword" 
+                :type="showConfirmPassword ? 'text' : 'password'" 
                 placeholder="请再次输入密码"
                 required
-              />
-              <button type="button" class="toggle-password" @click="showConfirmPassword = !showConfirmPassword">
-                <svg v-if="!showConfirmPassword" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                  <circle cx="12" cy="12" r="3"/>
+              >
+              <button
+                type="button"
+                class="toggle-password"
+                @click="showConfirmPassword = !showConfirmPassword"
+              >
+                <svg
+                  v-if="!showConfirmPassword"
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="3"
+                  />
                 </svg>
-                <svg v-else width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                  <line x1="1" y1="1" x2="23" y2="23"/>
+                <svg
+                  v-else
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                  <line
+                    x1="1"
+                    y1="1"
+                    x2="23"
+                    y2="23"
+                  />
                 </svg>
               </button>
             </div>
@@ -122,23 +258,60 @@
           
           <div class="terms-row">
             <label class="custom-checkbox">
-              <input type="checkbox" v-model="form.agree" required />
+              <input
+                v-model="form.agree"
+                type="checkbox"
+                required
+              >
               <span class="checkbox-box">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                  <polyline points="20 6 9 17 4 12"/>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                >
+                  <polyline points="20 6 9 17 4 12" />
                 </svg>
               </span>
               <span class="checkbox-label">
-                我已阅读并同意 <a href="#" @click.prevent>服务条款</a> 和 <a href="#" @click.prevent>隐私政策</a>
+                我已阅读并同意 <a
+                  href="#"
+                  @click.prevent
+                >服务条款</a> 和 <a
+                  href="#"
+                  @click.prevent
+                >隐私政策</a>
               </span>
             </label>
           </div>
           
-          <button type="submit" class="submit-btn" :disabled="loading || !form.agree">
+          <button
+            type="submit"
+            class="submit-btn"
+            :disabled="loading || !form.agree"
+          >
             <span v-if="!loading">注册</span>
-            <span v-else class="loading-state">
-              <svg class="spinner" width="20" height="20" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="30 70"/>
+            <span
+              v-else
+              class="loading-state"
+            >
+              <svg
+                class="spinner"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  fill="none"
+                  stroke-dasharray="30 70"
+                />
               </svg>
               注册中...
             </span>
@@ -146,7 +319,11 @@
         </form>
         
         <div class="card-footer">
-          <p>已有账户？ <router-link to="/login">立即登录</router-link></p>
+          <p>
+            已有账户？ <router-link to="/login">
+              立即登录
+            </router-link>
+          </p>
         </div>
       </div>
     </div>
