@@ -93,7 +93,8 @@
             <ProductCard 
               v-for="product in filteredProducts" 
               :key="product.id" 
-              :product="product" 
+              :product="product"
+              :rating-summary="ratingMap[product.id] || { average: 0, count: 0 }"
             />
           </div>
           
@@ -149,10 +150,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ProductCard from '@/components/ProductCard.vue'
-import { productApi } from '@/utils/api'
+import { productApi, productReviewApi } from '@/utils/api'
 
 const route = useRoute()
 const router = useRouter()
@@ -167,6 +168,7 @@ const pageSize = 12
 // 从 API 加载商品数据
 const products = ref([])
 const loading = ref(false)
+const ratingMap = reactive({})
 
 // 监听路由参数变化
 onMounted(async () => {
@@ -179,7 +181,26 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
-  
+
+  // 批量拉取评分汇总
+  if (products.value.length > 0) {
+    try {
+      const ids = products.value.map(p => p.id)
+      const data = await productReviewApi.summaryBatch(ids)
+      if (data && typeof data === 'object') {
+        Object.keys(data).forEach(pid => {
+          const item = data[pid] || {}
+          ratingMap[pid] = {
+            average: Number(item.average || 0),
+            count: Number(item.count || 0)
+          }
+        })
+      }
+    } catch (e) {
+      // 静默忽略
+    }
+  }
+
   if (route.query.search) {
     searchKeyword.value = route.query.search
   }

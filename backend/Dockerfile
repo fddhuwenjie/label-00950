@@ -42,6 +42,7 @@ COPY uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 
 # 复制自定义插件到 WordPress 源目录（entrypoint 会复制到 /var/www/html）
 COPY plugins/cross-border-commerce/ /usr/src/wordpress/wp-content/plugins/cross-border-commerce/
+COPY plugins/product-reviews/ /usr/src/wordpress/wp-content/plugins/product-reviews/
 
 # 复制商品图片到 WordPress web 根目录（WordPress entrypoint 不会自动复制自定义目录）
 COPY images/products/ /opt/product-images/

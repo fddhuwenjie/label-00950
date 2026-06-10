@@ -18,6 +18,15 @@
     </div>
     <div class="product-info">
       <h3 class="product-name">{{ product.name }}</h3>
+      <div class="product-rating" v-if="hasRating">
+        <StarRating :model-value="ratingAverage" readonly size="sm" />
+        <span class="rating-score">{{ ratingAverage.toFixed(1) }}</span>
+        <span class="rating-count">({{ ratingCount }})</span>
+      </div>
+      <div class="product-rating empty" v-else>
+        <StarRating :model-value="0" readonly size="sm" />
+        <span class="rating-count">暂无评价</span>
+      </div>
       <div class="product-price">
         <span class="current-price">${{ displayPrice }}</span>
         <span v-if="product.salePrice" class="original-price">
@@ -34,17 +43,34 @@ import { useRouter } from 'vue-router'
 import { useCartStore } from '@/stores/cart'
 import { useUserStore } from '@/stores/user'
 import toast from '@/utils/toast'
+import StarRating from '@/components/StarRating.vue'
 
 const props = defineProps({
   product: {
     type: Object,
     required: true
+  },
+  ratingSummary: {
+    type: Object,
+    default: () => ({ average: 0, count: 0 })
   }
 })
 
 const router = useRouter()
 const cartStore = useCartStore()
 const userStore = useUserStore()
+
+const ratingAverage = computed(() => {
+  const v = Number(props.product?.ratingAverage ?? props.ratingSummary?.average ?? 0)
+  return Number.isFinite(v) ? v : 0
+})
+
+const ratingCount = computed(() => {
+  const v = Number(props.product?.ratingCount ?? props.ratingSummary?.count ?? 0)
+  return Number.isFinite(v) ? v : 0
+})
+
+const hasRating = computed(() => ratingCount.value > 0)
 
 const displayPrice = computed(() => {
   return (props.product.salePrice || props.product.price).toFixed(2)
@@ -171,13 +197,34 @@ const handleAddToCart = () => {
   font-size: 15px;
   font-weight: 600;
   color: #1a1a1a;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 45px;
+}
+
+.product-rating {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 12px;
+
+  .rating-score {
+    font-weight: 700;
+    color: #f59e0b;
+  }
+
+  .rating-count {
+    color: #999;
+  }
+
+  &.empty .rating-count {
+    color: #bbb;
+  }
 }
 
 .product-price {
