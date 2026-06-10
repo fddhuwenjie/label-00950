@@ -1,9 +1,14 @@
 <template>
   <div class="cart-page">
     <div class="container">
-      <h1 class="page-title">购物车</h1>
+      <h1 class="page-title">
+        购物车
+      </h1>
       
-      <div v-if="cartStore.items.length > 0" class="cart-content">
+      <div
+        v-if="cartStore.items.length > 0"
+        class="cart-content"
+      >
         <div class="cart-items">
           <div class="cart-header">
             <span class="col-product">商品信息</span>
@@ -19,9 +24,15 @@
             class="cart-item"
           >
             <div class="col-product">
-              <img :src="item.image" :alt="item.name" />
+              <img
+                :src="item.image"
+                :alt="item.name"
+              >
               <div class="product-info">
-                <router-link :to="`/product/${item.id}`" class="product-name">
+                <router-link
+                  :to="`/product/${item.id}`"
+                  class="product-name"
+                >
                   {{ item.name }}
                 </router-link>
               </div>
@@ -31,24 +42,41 @@
             </div>
             <div class="col-quantity">
               <div class="quantity-input">
-                <button @click="updateQuantity(item.id, item.quantity - 1)">-</button>
+                <button @click="updateQuantity(item.id, item.quantity - 1)">
+                  -
+                </button>
                 <input 
                   type="number" 
                   :value="item.quantity" 
-                  @change="updateQuantity(item.id, +$event.target.value)"
                   min="1"
-                />
-                <button @click="updateQuantity(item.id, item.quantity + 1)">+</button>
+                  @change="updateQuantity(item.id, +$event.target.value)"
+                >
+                <button @click="updateQuantity(item.id, item.quantity + 1)">
+                  +
+                </button>
               </div>
             </div>
             <div class="col-total">
               ${{ (item.price * item.quantity).toFixed(2) }}
             </div>
             <div class="col-action">
-              <button class="remove-btn" @click="removeItem(item.id)">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <polyline points="3 6 5 6 21 6"></polyline>
-                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              <button
+                class="remove-btn"
+                @click="removeItem(item.id)"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                 </svg>
               </button>
             </div>
@@ -70,35 +98,70 @@
             <span>${{ (cartStore.totalPrice + shippingFee).toFixed(2) }}</span>
           </div>
           
-          <div class="free-shipping-tip" v-if="cartStore.totalPrice < 99">
+          <div
+            v-if="cartStore.totalPrice < 99"
+            class="free-shipping-tip"
+          >
             <p>再买 ${{ (99 - cartStore.totalPrice).toFixed(2) }} 即可免运费</p>
             <div class="progress-bar">
               <div 
                 class="progress" 
                 :style="{ width: Math.min(cartStore.totalPrice / 99 * 100, 100) + '%' }"
-              ></div>
+              />
             </div>
           </div>
           
-          <router-link to="/checkout" class="checkout-btn">
+          <router-link
+            to="/checkout"
+            class="checkout-btn"
+          >
             去结算 ({{ cartStore.itemCount }} 件)
           </router-link>
           
-          <router-link to="/products" class="continue-shopping">
+          <router-link
+            to="/products"
+            class="continue-shopping"
+          >
             继续购物
           </router-link>
         </div>
       </div>
       
-      <div v-else class="empty-cart">
-        <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="9" cy="21" r="1"></circle>
-          <circle cx="20" cy="21" r="1"></circle>
-          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+      <div
+        v-else
+        class="empty-cart"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="80"
+          height="80"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle
+            cx="9"
+            cy="21"
+            r="1"
+          />
+          <circle
+            cx="20"
+            cy="21"
+            r="1"
+          />
+          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
         </svg>
         <h2>购物车是空的</h2>
         <p>快去挑选心仪的商品吧</p>
-        <router-link to="/products" class="shop-btn">去购物</router-link>
+        <router-link
+          to="/products"
+          class="shop-btn"
+        >
+          去购物
+        </router-link>
       </div>
     </div>
   </div>

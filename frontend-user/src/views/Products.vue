@@ -15,8 +15,15 @@
         <aside class="filters-sidebar">
           <div class="filter-section">
             <h3>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 4h16v2.172a2 2 0 0 1-.586 1.414L15 12v7l-6-2v-5L4.586 7.586A2 2 0 0 1 4 6.172V4z"/>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M4 4h16v2.172a2 2 0 0 1-.586 1.414L15 12v7l-6-2v-5L4.586 7.586A2 2 0 0 1 4 6.172V4z" />
               </svg>
               商品分类
             </h3>
@@ -35,9 +42,21 @@
           
           <div class="filter-section">
             <h3>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="12" y1="1" x2="12" y2="23"/>
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <line
+                  x1="12"
+                  y1="1"
+                  x2="12"
+                  y2="23"
+                />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
               </svg>
               价格区间
             </h3>
@@ -53,9 +72,19 @@
             </ul>
           </div>
           
-          <button class="clear-filters" @click="clearFilters">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/>
+          <button
+            class="clear-filters"
+            @click="clearFilters"
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z" />
             </svg>
             清除筛选
           </button>
@@ -68,22 +97,58 @@
               共 <strong>{{ filteredProducts.length }}</strong> 件商品
             </span>
             <div class="toolbar-right">
-              <button v-if="searchKeyword" class="clear-search-toolbar" @click="clearSearch">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <line x1="18" y1="6" x2="6" y2="18"/>
-                  <line x1="6" y1="6" x2="18" y2="18"/>
+              <button
+                v-if="searchKeyword"
+                class="clear-search-toolbar"
+                @click="clearSearch"
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <line
+                    x1="18"
+                    y1="6"
+                    x2="6"
+                    y2="18"
+                  />
+                  <line
+                    x1="6"
+                    y1="6"
+                    x2="18"
+                    y2="18"
+                  />
                 </svg>
                 清除搜索
               </button>
               <div class="sort-select">
                 <select v-model="sortBy">
-                  <option value="default">默认排序</option>
-                  <option value="price_asc">价格从低到高</option>
-                  <option value="price_desc">价格从高到低</option>
-                  <option value="newest">最新上架</option>
+                  <option value="default">
+                    默认排序
+                  </option>
+                  <option value="price_asc">
+                    价格从低到高
+                  </option>
+                  <option value="price_desc">
+                    价格从高到低
+                  </option>
+                  <option value="newest">
+                    最新上架
+                  </option>
                 </select>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M6 9l6 6 6-6"/>
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path d="M6 9l6 6 6-6" />
                 </svg>
               </div>
             </div>
@@ -97,27 +162,55 @@
             />
           </div>
           
-          <div v-if="filteredProducts.length === 0" class="no-products">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
-              <circle cx="11" cy="11" r="8"/>
-              <path d="M21 21l-4.35-4.35"/>
+          <div
+            v-if="filteredProducts.length === 0"
+            class="no-products"
+          >
+            <svg
+              width="64"
+              height="64"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1"
+            >
+              <circle
+                cx="11"
+                cy="11"
+                r="8"
+              />
+              <path d="M21 21l-4.35-4.35" />
             </svg>
             <h3>{{ searchKeyword ? '未找到相关商品' : '暂无商品' }}</h3>
             <p>{{ searchKeyword ? '尝试其他关键词或' : '' }}调整筛选条件</p>
-            <button v-if="searchKeyword" class="clear-search-btn" @click="clearSearch">
+            <button
+              v-if="searchKeyword"
+              class="clear-search-btn"
+              @click="clearSearch"
+            >
               清除搜索
             </button>
           </div>
           
           <!-- 分页 -->
-          <div v-if="filteredProducts.length > 0" class="pagination">
+          <div
+            v-if="filteredProducts.length > 0"
+            class="pagination"
+          >
             <button 
               class="page-btn"
               :disabled="currentPage === 1"
               @click="currentPage--"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M15 18l-6-6 6-6"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M15 18l-6-6 6-6" />
               </svg>
               上一页
             </button>
@@ -137,8 +230,15 @@
               @click="currentPage++"
             >
               下一页
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 18l6-6-6-6"/>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M9 18l6-6-6-6" />
               </svg>
             </button>
           </div>

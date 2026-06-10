@@ -3,28 +3,41 @@
     <!-- Hero Banner - 顶级设计风格 -->
     <section class="hero">
       <div class="hero-bg">
-        <div class="gradient-overlay"></div>
+        <div class="gradient-overlay" />
         <div class="floating-elements">
-          <div class="float-circle c1"></div>
-          <div class="float-circle c2"></div>
-          <div class="float-circle c3"></div>
-          <div class="blur-blob b1"></div>
-          <div class="blur-blob b2"></div>
+          <div class="float-circle c1" />
+          <div class="float-circle c2" />
+          <div class="float-circle c3" />
+          <div class="blur-blob b1" />
+          <div class="blur-blob b2" />
         </div>
       </div>
       <div class="container">
         <div class="hero-content">
           <span class="hero-tag">GLOBAL SHOPPING</span>
-          <h1>全球精选<br/><span class="gradient-text">奢品好物</span></h1>
+          <h1>全球精选<br><span class="gradient-text">奢品好物</span></h1>
           <p>{{ siteSettings.siteDescription }}</p>
           <div class="hero-actions">
-            <router-link to="/products" class="btn-primary">
+            <router-link
+              to="/products"
+              class="btn-primary"
+            >
               <span>立即探索</span>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
+              <svg
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </router-link>
-            <router-link to="/register" class="btn-secondary">
+            <router-link
+              to="/register"
+              class="btn-secondary"
+            >
               新人礼遇
             </router-link>
           </div>
@@ -73,11 +86,32 @@
         <div class="features-grid">
           <div class="feature-card">
             <div class="feature-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <rect x="1" y="3" width="15" height="13" rx="2"/>
-                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
-                <circle cx="5.5" cy="18.5" r="2.5"/>
-                <circle cx="18.5" cy="18.5" r="2.5"/>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <rect
+                  x="1"
+                  y="3"
+                  width="15"
+                  height="13"
+                  rx="2"
+                />
+                <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                <circle
+                  cx="5.5"
+                  cy="18.5"
+                  r="2.5"
+                />
+                <circle
+                  cx="18.5"
+                  cy="18.5"
+                  r="2.5"
+                />
               </svg>
             </div>
             <div class="feature-content">
@@ -87,9 +121,16 @@
           </div>
           <div class="feature-card">
             <div class="feature-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                <path d="M9 12l2 2 4-4"/>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <path d="M9 12l2 2 4-4" />
               </svg>
             </div>
             <div class="feature-content">
@@ -99,10 +140,17 @@
           </div>
           <div class="feature-card">
             <div class="feature-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M23 4v6h-6"/>
-                <path d="M1 20v-6h6"/>
-                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path d="M23 4v6h-6" />
+                <path d="M1 20v-6h6" />
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
               </svg>
             </div>
             <div class="feature-content">
@@ -112,8 +160,15 @@
           </div>
           <div class="feature-card">
             <div class="feature-icon">
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+              <svg
+                width="28"
+                height="28"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
               </svg>
             </div>
             <div class="feature-content">
@@ -142,8 +197,11 @@
             class="category-card"
           >
             <div class="category-image">
-              <img :src="category.image" :alt="category.name" />
-              <div class="category-overlay"></div>
+              <img
+                :src="category.image"
+                :alt="category.name"
+              >
+              <div class="category-overlay" />
             </div>
             <div class="category-info">
               <h3>{{ category.name }}</h3>
@@ -162,10 +220,20 @@
             <span class="section-tag">BEST SELLERS</span>
             <h2>热销爆款</h2>
           </div>
-          <router-link to="/products" class="view-all-btn">
+          <router-link
+            to="/products"
+            class="view-all-btn"
+          >
             查看全部
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
           </router-link>
         </div>
@@ -187,17 +255,27 @@
             <span class="promo-tag">LIMITED OFFER</span>
             <h2>新用户专享</h2>
             <p>首次注册即享 <strong>9折优惠</strong></p>
-            <router-link to="/register" class="promo-btn">
+            <router-link
+              to="/register"
+              class="promo-btn"
+            >
               立即领取
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M5 12h14M12 5l7 7-7 7"/>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
             </router-link>
           </div>
           <div class="promo-decoration">
-            <div class="deco-ring r1"></div>
-            <div class="deco-ring r2"></div>
-            <div class="deco-ring r3"></div>
+            <div class="deco-ring r1" />
+            <div class="deco-ring r2" />
+            <div class="deco-ring r3" />
           </div>
         </div>
       </div>
@@ -211,10 +289,20 @@
             <span class="section-tag">NEW ARRIVALS</span>
             <h2>新品上架</h2>
           </div>
-          <router-link to="/products?sort=newest" class="view-all-btn">
+          <router-link
+            to="/products?sort=newest"
+            class="view-all-btn"
+          >
             查看全部
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" />
             </svg>
           </router-link>
         </div>

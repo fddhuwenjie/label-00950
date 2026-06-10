@@ -712,6 +712,7 @@ class Cross_Border_Commerce {
                 }
                 $items[] = array(
                     'id' => $item->get_id(),
+                    'product_id' => $item->get_product_id(),
                     'name' => $item->get_name(),
                     'quantity' => $item->get_quantity(),
                     'price' => floatval($item->get_total()),

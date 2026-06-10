@@ -102,6 +102,13 @@ export const crossBorderApi = {
   calculateDuty: (data) => api.post('/duty/calculate', data),
 }
 
+export const reviewApi = {
+  getReviews: (params) => api.get('/reviews', params),
+  getReviewStats: (params) => api.get('/reviews/stats', params),
+  submitReview: (data) => api.post('/reviews', data),
+  checkCanReview: (params) => api.get('/reviews/check', params),
+}
+
 // ===== 站点设置 API =====
 export const settingsApi = {
   get: () => api.get('/settings'),
